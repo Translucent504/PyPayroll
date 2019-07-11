@@ -18,8 +18,8 @@ class Employee(object):
         self.overtimehours,self.daysabsent,self.dayspresent,self.meters,self.redyeing,self.loans = 0,0,0,0,0,0
         self.overtimepay, self.totalpay ,self.meters, self.redyeing,self.normalpay = 0,0,0,0,0
         with sqlite3.connect('test2.db') as conn:
-            empdata = conn.execute("""select "emp-name", department, designation, salary, "salary-int","""
-                                    """ "overtime-rate" from employees where empid = :id""",{'id':self.id})
+            empdata = conn.execute("""select "empname", department, designation, salary, "salaryint","""
+                                    """ "overtimerate" from employees where empid = :id""",{'id':self.id})
         self.name, self.department, self.designation, self.salary, self.salary_interval, self.overtimerate = empdata.fetchone()  
 
     def setAttendanceDict(self, month, year=2019):
@@ -29,7 +29,7 @@ class Employee(object):
         to the day and the value itself is the tupple representing status (P,4) (A,0) etc
         """    
         with sqlite3.connect('test2.db') as conn:
-            attendance = conn.execute('select status,"overtime-worked",date from attendance where empid=:id and date like :date order by date asc',{'id':self.id, 'date':f"{year}-{month}-%"})
+            attendance = conn.execute('select status,"overtimeworked",date from attendance where empid=:id and date like :date order by date asc',{'id':self.id, 'date':f"{year}-{month}-%"})
         self.attendance = {att[2]:(att[0],att[1]) for att in attendance.fetchall()}
                 
     def setAttendanceHalf(self, month, half=0, year=2019):
@@ -49,7 +49,7 @@ class Employee(object):
                     
             if half == 0:
                 self.dayspresent = conn.execute('select count(*) from attendance WHERE status = "P" and date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
-                self.overtimehours = conn.execute('select SUM("overtime-worked") from attendance WHERE date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
+                self.overtimehours = conn.execute('select SUM("overtimeworked") from attendance WHERE date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 try:
                     self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]
@@ -59,7 +59,7 @@ class Employee(object):
                     self.loans = 0
             elif half == 1:
                 self.dayspresent = conn.execute('select count(*) from attendance WHERE status = "P" and date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
-                self.overtimehours = conn.execute('select SUM("overtime-worked") from attendance WHERE date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
+                self.overtimehours = conn.execute('select SUM("overtimeworked") from attendance WHERE date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 try:
                     self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]        
@@ -74,7 +74,7 @@ class Employee(object):
         """
         with sqlite3.connect('test2.db') as conn:
             self.dayspresent = conn.execute('select count(*) from attendance WHERE status = "P" and date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
-            #self.overtimehours = conn.execute('select SUM("overtime-worked") from attendance WHERE date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
+            #self.overtimehours = conn.execute('select SUM("overtimeworked") from attendance WHERE date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
             self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
             try:
                 self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]        
@@ -89,7 +89,7 @@ class Employee(object):
         setAttendanceHalf is used to tell this function which month's pay is to be calculated and also provides
         the necessary data for the calculation.
         """
-        
+
         if self.department == 'Production':
             self.totalpay = self.meters * self.salary + self.redyeing * self.salary
             self.balance = self.totalpay - self.loans

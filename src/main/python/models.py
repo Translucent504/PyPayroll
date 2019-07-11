@@ -30,8 +30,7 @@ def employeeModel():
 def loanAdjustmentModel():
     model = QtSql.QSqlRelationalTableModel()
     model.setTable('loanadjustments')
-    name = "emp-name"
-    model.setRelation(0, QtSql.QSqlRelation('employees', 'empid', 'department'))
+    model.setRelation(0, QtSql.QSqlRelation('employees', 'empid', 'empname'))
     for i in range(model.columnCount()):
         model.setHeaderData(i, QtCore.Qt.Horizontal, Definitions.TableHeaders['loanadjustments'][i])
     model.select()
@@ -53,16 +52,16 @@ def attendanceModelData(year='2019',month='01', department='Talking', half=0):
 
     
     """
-    # SELECT date,department,"emp-name",status,"overtime-worked" FROM attendance INNER JOIN employees on employees.empid = attendance.empid
+    # SELECT date,department,"empname",status,"overtimeworked" FROM attendance INNER JOIN employees on employees.empid = attendance.empid
 
     with sqlite3.connect("test2.db") as conn:
         cur = conn.cursor()
         # Note: in this query I tried doing LIKE "%-:month-%" but i guess the :month was not being replaced by the value in dict and instead being used to filter for date literally.
-        departdata = cur.execute('SELECT "emp-name",designation FROM employees WHERE department=:dep',{'dep':department})
+        departdata = cur.execute('SELECT "empname",designation FROM employees WHERE department=:dep',{'dep':department})
         departdata = dict(departdata.fetchall())
-        ids = cur.execute('SELECT "emp-name","empid" FROM employees WHERE department=:dep',{'dep':department})
+        ids = cur.execute('SELECT "empname","empid" FROM employees WHERE department=:dep',{'dep':department})
         ids = dict(ids.fetchall())
-        rawdata = cur.execute('SELECT date,department,"emp-name",designation,status,"overtime-worked" FROM attendance INNER JOIN employees on employees.empid = attendance.empid WHERE department =:department AND date LIKE :month',{'department':department, 'month':f"{year}-{month}-%"})
+        rawdata = cur.execute('SELECT date,department,"empname",designation,status,"overtimeworked" FROM attendance INNER JOIN employees on employees.empid = attendance.empid WHERE department =:department AND date LIKE :month',{'department':department, 'month':f"{year}-{month}-%"})
 
     empdict = {}
     
@@ -610,8 +609,8 @@ class attendanceModel(QtCore.QAbstractTableModel):
                 status = status.upper()   
                 with sqlite3.connect("test2.db") as conn:
                     cur = conn.cursor()
-                    asd = cur.execute('UPDATE attendance SET status=:status,"overtime-worked"=:overtime WHERE empid =:id AND date=:date ',{'status':status,'overtime':overtime,'id':_id,'date':date})          
-                    _ = cur.execute('INSERT OR IGNORE INTO attendance(empid,date,status,"overtime-worked") values (:id,:date,:status,:overtime )',{'status':status,'overtime':overtime,'id':_id,'date':date})
+                    asd = cur.execute('UPDATE attendance SET status=:status,"overtimeworked"=:overtime WHERE empid =:id AND date=:date ',{'status':status,'overtime':overtime,'id':_id,'date':date})          
+                    _ = cur.execute('INSERT OR IGNORE INTO attendance(empid,date,status,"overtimeworked") values (:id,:date,:status,:overtime )',{'status':status,'overtime':overtime,'id':_id,'date':date})
                 #self.load_data() # testing to see if the table updates properly without loading the entire table again... 
                 self.employees[row].setAttendanceDict(self.month, self.year)
                 self.employees[row].setAttendanceHalf(self.month, self.half)
@@ -752,7 +751,7 @@ class newTransactionModel(QtCore.QAbstractTableModel):
 
     def getAllTransactions(self):
         with sqlite3.connect('test2.db') as conn:
-            query = f"""SELECT id,date,"emp-name", credit, debit, (SELECT sum(debit - credit)
+            query = f"""SELECT id,date,"empname", credit, debit, (SELECT sum(debit - credit)
             FROM transactionsnew AS T2
             WHERE T2.date <= transactionsnew.date and T2.empid = {self.employee.id}) AS cumulative_sum
             FROM transactionsnew inner join employees on transactionsnew.empid = employees.empid 
@@ -849,7 +848,7 @@ class staffSalaryModel(QtCore.QAbstractTableModel):
 
     def getEmployees(self):
         with sqlite3.connect("test2.db") as conn:
-            query = 'select empid from employees where "salary-int" = "Monthly" and department <> "Production"'    
+            query = 'select empid from employees where "salaryint" = "Monthly" and department <> "Production"'    
             emps = conn.execute(query).fetchall()
             if emps:
                 self.employees = [myobjects.Employee(empid[0]) for empid in emps]

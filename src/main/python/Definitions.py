@@ -29,8 +29,8 @@ TableCreateQuery = {
 	"department"	TEXT,
 	"designation"	TEXT,
 	"salary"	INTEGER,
-	"salary-int"	TEXT,
-	"overtime-rate"	INTEGER,
+	"salaryint"	TEXT,
+	"overtimerate"	INTEGER,
 	"working"	TEXT,
 	FOREIGN KEY("department") REFERENCES "departments"("department")
     )""",
@@ -43,7 +43,7 @@ TableCreateQuery = {
 	"empid"	INTEGER,
 	"date"	TEXT,
 	"status"	TEXT,
-	"overtime-worked"	INTEGER,
+	"overtimeworked"	INTEGER,
 	FOREIGN KEY("empid") REFERENCES "employees"("empid"),
 	PRIMARY KEY("date","empid")
     ) """,

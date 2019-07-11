@@ -30,7 +30,7 @@ class transactionDialog(QDialog):
         self.ui.listWidget.clear()
         department = self.ui.comboBox.currentText()
         with sqlite3.connect('test2.db') as conn:
-            employees = conn.execute('select empid, "emp-name" from employees where department = :dept',{'dept':department})
+            employees = conn.execute('select empid, "empname" from employees where department = :dept',{'dept':department})
         self.employees = {emp[1]:emp[0] for emp in employees.fetchall()}
         self.ui.listWidget.addItems(list(self.employees.keys()))
         

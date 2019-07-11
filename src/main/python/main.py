@@ -113,7 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dlg.exec()
         if dlg.data:
             with sqlite3.connect('test2.db') as conn:
-                conn.execute('INSERT INTO employees("emp-name",department,designation,salary,"salary-int","overtime-rate","working") VALUES(:name,:depart,:designation,:salary,:salarystruct,:overtime,:working)',dlg.data)
+                conn.execute('INSERT INTO employees("empname",department,designation,salary,"salaryint","overtimerate","working") VALUES(:name,:depart,:designation,:salary,:salarystruct,:overtime,:working)',dlg.data)
         self.empmodel.select()
 
     def showUpdateEmpDialog(self):
@@ -126,13 +126,13 @@ class MainWindow(QtWidgets.QMainWindow):
         model = self.empmodel
         mapper = QtWidgets.QDataWidgetMapper(dlg)
         mapper.setModel(model)
-        mapper.addMapping(dlg.name, model.fieldIndex("emp-name"))
+        mapper.addMapping(dlg.name, model.fieldIndex("empname"))
         mapper.addMapping(dlg.depart, model.fieldIndex("department"))
         mapper.addMapping(dlg.designation, model.fieldIndex("designation"))
         mapper.addMapping(dlg.salary, model.fieldIndex("salary"))
-        mapper.addMapping(dlg.overtime, model.fieldIndex("overtime-rate"))
+        mapper.addMapping(dlg.overtime, model.fieldIndex("overtimerate"))
         mapper.addMapping(dlg.working, model.fieldIndex("working"))
-        mapper.addMapping(dlg.salarystruct, model.fieldIndex("salary-int"))
+        mapper.addMapping(dlg.salarystruct, model.fieldIndex("salaryint"))
         mapper.setCurrentIndex(self.ui.empTable.currentIndex().row())
         dlg.show()
         
