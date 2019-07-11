@@ -52,7 +52,7 @@ import connection
 
 def initializeModel(model):
     model.setTable('employee')
-    model.setJoinMode(QSqlRelationalTableModel.InnerJoin)
+    #model.setJoinMode(QSqlRelationalTableModel.InnerJoin)
     model.setEditStrategy(QSqlTableModel.OnManualSubmit)
     model.setRelation(2, QSqlRelation('city', 'id', 'name'))
     #model.setRelation(2, QSqlRelation('city', 'id', 'amount'))

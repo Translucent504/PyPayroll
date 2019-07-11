@@ -4,8 +4,9 @@ from PySide2 import QtCore, QtGui, QtWidgets, QtSql , QtPrintSupport
 import sys
 import sqlite3
 import mainPayrollWindow
-from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, transactionModel, staffSalaryModel
+from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, newTransactionModel, staffSalaryModel, loanAdjustmentModel
 from addEmployeedlg import addEmployee
+from updateEmployeedlg import updateEmployee
 from transactiondlg import transactionDialog
 from printing import makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf, makeSalarySummaryPdf
 from myobjects import Employee, Department
@@ -23,10 +24,10 @@ class MainWindow(QtWidgets.QMainWindow):
         with sqlite3.connect('test2.db') as conn:
             self.departments = conn.execute('SELECT department FROM departments').fetchall()
         self.departments = [x[0] for x in self.departments]
-        self.initUI()
         self.initBeautification()
         self.ui.stack.setCurrentIndex(0)
         self.init_navbar()
+        self.initUI()
         
     def initUI(self):
         self.empmodel = employeeModel()
@@ -34,9 +35,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.atndelegate = attendanceDelegate()
         self.deptmodel = departmentModel()
         self.salarymodel = salaryModel()
-        self.transactionmodel = transactionModel()
+        self.transactionmodel = newTransactionModel(23)
         self.salsummarymodel = salarySummaryModel()
         self.staffsalarymodel = staffSalaryModel()
+        self.loanadjustmentmodel = loanAdjustmentModel()
         #self.init_menubar()
         self.init_emp_stackpage() 
         self.init_attend_stackpage()
@@ -120,7 +122,7 @@ class MainWindow(QtWidgets.QMainWindow):
         should already have the current record's entries pre filled into the form.
         Lets try with Data mapping...later
         """
-        dlg = addEmployee()
+        dlg = updateEmployee()
         model = self.empmodel
         mapper = QtWidgets.QDataWidgetMapper(dlg)
         mapper.setModel(model)
@@ -132,10 +134,11 @@ class MainWindow(QtWidgets.QMainWindow):
         mapper.addMapping(dlg.working, model.fieldIndex("working"))
         mapper.addMapping(dlg.salarystruct, model.fieldIndex("salary-int"))
         mapper.setCurrentIndex(self.ui.empTable.currentIndex().row())
-        dlg.rejectbtn.setText("Close")
-        dlg.acceptbtn.hide()
-        dlg.setWindowTitle("Update Employee Info")
         dlg.show()
+        
+
+        
+        
         
 
     def UpdateAllModels(self):
@@ -163,12 +166,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.empdepoption.addItem('All')
         self.ui.empdepoption.addItems(self.departments)
         self.ui.empdepoption.currentTextChanged.connect(self.filterEmpTable)
-        self.ui.empTable.resizeColumnsToContents()
-        self.ui.empTable.resizeRowsToContents()
+        #self.ui.empTable.resizeColumnsToContents()
+        #self.ui.empTable.resizeRowsToContents()
         self.ui.empTable.doubleClicked.connect(self.showUpdateEmpDialog)
         self.ui.addempbtn.clicked.connect(self.showAddEmpDialog)
         self.ui.delempbtn.clicked.connect(self.del_emp)
-        """  self.ui.pushButton.clicked.connect(self.UpdateAllModels) """
+        self.ui.empTable.setColumnWidth(1,200)
+        
 
     def init_attend_stackpage(self):
         # font size 12 is good
@@ -183,7 +187,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.depoption.currentTextChanged.connect(self.ui.atntable.resizeColumnsToContents)
         self.ui.atntable.setItemDelegate(self.atndelegate)
         self.ui.atntable.setModel(self.atnmodel)
-        self.ui.atntable.resizeColumnsToContents()
+        #self.ui.atntable.resizeColumnsToContents()
         #self.ui.atntable.resizeRowsToContents()
         #self.ui.atntable.horizontalHeader().setStretchLastSection(True)
 
@@ -211,6 +215,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.salarymodel.norecord.connect(self.showNoRecordError)
         self.salarymodel.initEmployees()
         self.salarymodel.initEmployeePay()
+        self.ui.loanAdjustmentsTable.setModel(self.loanadjustmentmodel)
         self.ui.saldeptable.setModel(self.salarymodel)
         self.ui.saldeptable.resizeColumnsToContents()
         self.ui.saldeptable.resizeRowsToContents()
@@ -225,7 +230,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.salsumarytable.resizeRowsToContents()
     
     def showNewTransDlg(self):
-        
+        pass
+        """ 
         @QtCore.Slot(object)
         def updateDB(data):
             with sqlite3.connect('test2.db') as conn:
@@ -234,18 +240,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         dlg = transactionDialog()
         dlg.dataready.connect(updateDB)
-        dlg.exec_()
+        dlg.exec_() """
         
     def init_transaction_stackpage(self):
         self.ui.newtrans.clicked.connect(self.showNewTransDlg)
         self.ui.tableView.setModel(self.transactionmodel)
-        self.ui.depoption_3.addItems(self.departments)
-        self.ui.depoption_3.currentTextChanged.connect(self.transactionmodel.setDepartment)
-        self.ui.dateEdit.dateChanged.connect(self.transactionmodel.setstartDate)
-        self.ui.dateEdit_2.dateChanged.connect(self.transactionmodel.setendDate)
         self.ui.tableView.resizeColumnsToContents()
         self.ui.tableView.resizeRowsToContents()
-        self.ui.deltrans.clicked.connect(lambda : self.transactionmodel.deletetransaction(self.ui.tableView.currentIndex()))
+        #self.ui.deltrans.clicked.connect(lambda : self.transactionmodel.deletetransaction(self.ui.tableView.currentIndex()))
     
     def init_staffsalary_stackpage(self):
         self.ui.salmonthoption_2.currentIndexChanged.connect(self.staffsalarymodel.setMonth)
@@ -373,6 +375,7 @@ class MainWindow(QtWidgets.QMainWindow):
         setting title / icon etc
         """
         pass
+        
 
 
 if __name__ == '__main__':

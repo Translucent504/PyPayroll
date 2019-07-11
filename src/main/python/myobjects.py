@@ -52,7 +52,7 @@ class Employee(object):
                 self.overtimehours = conn.execute('select SUM("overtime-worked") from attendance WHERE date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 try:
-                    self.loans = conn.execute('select sum(amount) from transactions where date like :month and date <= :datelimit and empid = :id', {'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
+                    self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]
                     if self.loans == None:
                         self.loans = 0
                 except:
@@ -62,7 +62,7 @@ class Employee(object):
                 self.overtimehours = conn.execute('select SUM("overtime-worked") from attendance WHERE date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 try:
-                    self.loans = conn.execute('select sum(amount) from transactions where date like :month and date > :datelimit and empid = :id', {'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]        
+                    self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]        
                     if self.loans == None:
                         self.loans = 0
                 except:
@@ -77,7 +77,7 @@ class Employee(object):
             #self.overtimehours = conn.execute('select SUM("overtime-worked") from attendance WHERE date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
             self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
             try:
-                self.loans = conn.execute('select sum(amount) from transactions where date like :month empid = :id', {'month':f"{year}-{month}-%", 'id':self.id}).fetchone()[0]        
+                self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]        
                 if self.loans == None:
                     self.loans = 0
             except:
@@ -89,21 +89,21 @@ class Employee(object):
         setAttendanceHalf is used to tell this function which month's pay is to be calculated and also provides
         the necessary data for the calculation.
         """
+        
         if self.department == 'Production':
             self.totalpay = self.meters * self.salary + self.redyeing * self.salary
             self.balance = self.totalpay - self.loans
+
         elif self.salary_interval == 'Daily':
             self.normalpay = self.dayspresent * self.salary
             self.overtimepay = self.overtimehours * self.overtimerate
             self.totalpay = self.normalpay + self.overtimepay
             self.balance = self.totalpay - self.loans
+
         elif self.salary_interval == 'Monthly':
             self.attendeduction = self.daysabsent*(self.salary/30)
             self.normalpay = self.salary - self.attendeduction
             self.overtimepay = self.overtimehours * self.overtimerate
-           # self.totalpay = self.normalpay + self.overtimepay - self.daysabsent * (self.salary/30)
-           # this is done because monthly staff is only paid overtime bimonthly and is paid the full 
-           # salary together at end of month... 
             self.totalpay = self.normalpay
             self.balance = self.totalpay - self.loans
 

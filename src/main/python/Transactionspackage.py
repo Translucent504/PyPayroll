@@ -18,8 +18,8 @@ import pprint
 # Balance calculation query:
 
 
-LUL = """SELECT date,"emp-name"
-       credit,
+LUL = """SELECT date,"emp-name",
+       credit, debit,
        (SELECT sum(debit - credit)
         FROM transactionsnew AS T2
         WHERE T2.date <= transactionsnew.date and T2.empid = 23
@@ -43,6 +43,7 @@ class newTransactionModel(QtCore.QAbstractTableModel):
     def __init__(self, employeeid, daterange=[]):
         super().__init__()
         self.employee = myobjects.Employee(employeeid)
+        self.getAllTransactions()
         #self.department = myobjects.Department(department)
         #self.startdate = startdate
         #self.enddate = enddate
@@ -50,63 +51,54 @@ class newTransactionModel(QtCore.QAbstractTableModel):
         #self.empids = [employee.id for employee in self.employees]
         #self.setTransactions()
 
-    
     def getAllTransactions(self):
         with sqlite3.connect('test2.db') as conn:
-            query = f'select * from transactionsnew where empid = {self.employee.id}'
+            query = f"""SELECT id,date,"emp-name", credit, debit, (SELECT sum(debit - credit)
+            FROM transactionsnew AS T2
+            WHERE T2.date <= transactionsnew.date and T2.empid = {self.employee.id}) AS cumulative_sum
+            FROM transactionsnew inner join employees on transactionsnew.empid = employees.empid 
+            WHERE transactionsnew.empid = {self.employee.id}
+            ORDER BY date;"""
             result = conn.execute(query).fetchall()
-            print(result)
+        if result:
+            self.alltransactiondata = result
+        pprint.pprint(result)
+
     @QtCore.Slot(object)
     def setDateRange(self, daterange):
         #print(enddate.toPython())
         self.daterange = daterange #??????
-        self.setTransactions()
+        
         
     def deletetransaction(self, index):
         transid = self.displaydata[index.row()]['transid']
         with sqlite3.connect('test2.db') as conn:
-            conn.execute(f'delete from transactions where "transaction-id" = {transid}')
-        self.setTransactions()    
-
-    def setTransactions(self):
-        
-        with sqlite3.connect('test2.db') as conn:
-            #{'empids':self.empids, 'startdate': f"{self.startyear}-{self.startmonth:02}-{self.startday:02}" ,'enddate': f"{self.endyear}-{self.endmonth:02}-{self.endday:02}"}
-            query = f"SELECT * FROM transactions WHERE empid in ({','.join(['?']*len(self.empids))}) and date between '{self.startdate}' and '{self.enddate} order by date desc'"
-            self.transactiondata = conn.execute(query, self.empids).fetchall()
-        
-            #transactiondata = conn.execute('select * from transactions where empid in (:empids) and date between :startdate and :enddate',{'startdate':self.startdate,'enddate':self.enddate,'empids':self.empids})
-        
-        self.displaydata = []
-        for x in self.transactiondata:
-            tmp = {}
-            tmp['transid'] = x[0]
-            tmp['empname'] = myobjects.Employee(x[1]).name
-            tmp['date'] = x[2]
-            tmp['amount'] = x[3]
-            self.displaydata.append(tmp)
-
-        self.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.columnCount()-1)
+            conn.execute(f'delete from transactions where "transaction-id" = {transid}')   
 
     def rowCount(self,parent=QtCore.QModelIndex()):
         if parent.isValid():
             return 0
-        return len(self.transactiondata)
+        return len(self.alltransactiondata)
 
     def columnCount(self,parent=QtCore.QModelIndex()):
         if parent.isValid():
             return 0
-        return 6
+        return 5
 
     def data(self, index, role):
         row, col = index.row(), index.column()
         if role == QtCore.Qt.DisplayRole:
             if col == 0:
-                return self.displaydata[row]['empname']
+                return self.alltransactiondata[row][1]
             elif col == 1:
-                return self.displaydata[row]['amount']
-            elif col ==2:
-                return self.displaydata[row]['date']
+                return self.alltransactiondata[row][2]
+            elif col == 2:
+                return self.alltransactiondata[row][3]
+            elif col == 3:
+                return self.alltransactiondata[row][4]
+            elif col == 4:
+                return self.alltransactiondata[row][5]
+
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
@@ -115,9 +107,9 @@ class newTransactionModel(QtCore.QAbstractTableModel):
             if section == 1:
                 return "Name"
             if section == 2:
-                return "Type"
+                return "Credit"
             if section == 3:
-                return "Amount"
+                return "Debit"
             if section == 4:
                 return "Balance"
             if section == 5:
@@ -141,23 +133,25 @@ class newTransactionModel(QtCore.QAbstractTableModel):
         return False
 
     def flags(self, index):
-        if not index.column() == 0:
-            return QtCore.Qt.ItemIsEditable | super().flags(index)
-        else:
-            return super().flags(index)
+        # if not index.column() == 0:
+        #     return QtCore.Qt.ItemIsEditable | super().flags(index)
+        # else:
+        return super().flags(index)
 
 
-def getAllTransactions():
+def watgetAllTransactions():
         with sqlite3.connect('test2.db') as conn:
             query = f'select * from transactionsnew where empid = {23}'
             result = conn.execute(LUL).fetchall()
             pprint.pprint(result)
 
-getAllTransactions()
-"""
+proxy = QtCore.QSortFilterProxyModel()
+
+
+
 app = QtWidgets.QApplication()
 view = QtWidgets.QTableView()
+view.setModel(newTransactionModel(23))
 view.show()
 exitcode = app.exec_()
 sys.exit(exitcode) 
-"""
