@@ -150,9 +150,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def filterEmpTable(self, depfilter):
         if depfilter == "All":
             self.empmodel.setFilter('')
+            self.ui.empTable.resizeRowsToContents()
         else:
             self.empmodel.setFilter(f'department="{depfilter}"')
-            
+            self.ui.empTable.resizeRowsToContents()
 
     def init_emp_stackpage(self):
         self.ui.empTable.setModel(self.empmodel)
