@@ -29,6 +29,7 @@ def employeeModel():
 
 def loanAdjustmentModel():
     model = QtSql.QSqlRelationalTableModel()
+    model.setEditStrategy(model.OnFieldChange)
     model.setTable('loanadjustments')
     model.setRelation(0, QtSql.QSqlRelation('employees', 'empid', 'empname'))
     for i in range(model.columnCount()):

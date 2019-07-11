@@ -216,6 +216,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.salarymodel.initEmployees()
         self.salarymodel.initEmployeePay()
         self.ui.loanAdjustmentsTable.setModel(self.loanadjustmentmodel)
+        self.ui.loanAdjustmentsTable.viewportEntered.connect(self.loanadjustmentmodel.select)
         self.ui.saldeptable.setModel(self.salarymodel)
         self.ui.saldeptable.resizeColumnsToContents()
         self.ui.saldeptable.resizeRowsToContents()
