@@ -35,6 +35,9 @@ def loanAdjustmentModel():
     for i in range(model.columnCount()):
         model.setHeaderData(i, QtCore.Qt.Horizontal, Definitions.TableHeaders['loanadjustments'][i])
     model.select()
+
+
+
     return model
 
 
@@ -151,7 +154,7 @@ class salaryModel(QtCore.QAbstractTableModel):
                 elif col == 3:
                     return employee.overtimerate
                 elif col == 4:
-                    return "Hourly: "+f"{employee.normalpay}"
+                    return f"{employee.normalpay}"
                 elif col == 5:
                     return employee.overtimepay
                 elif col == 6:
@@ -171,7 +174,7 @@ class salaryModel(QtCore.QAbstractTableModel):
                 elif col == 3:
                     return self.overtimedata[row]["overtimerate"]
                 elif col == 4:
-                    return "?" #"Monthly: "+f"{employee.salary}"
+                    return "0" # hardcoded 0 because Staff are not paid salary with rest of departments, only paid Overtime.
                 elif col == 5:
                     return self.overtimedata[row]["overtimepay"]
                 elif col == 6:
@@ -392,6 +395,9 @@ class salarySummaryModel(QtCore.QAbstractTableModel):
                 else:
                     value = round(float(self.data(self.index(row,col), QtCore.Qt.DisplayRole)))
                     tmp.append(value)
+                    if self.data(self.index(row,0),QtCore.Qt.DisplayRole) in ("Meters","Redyeing"):
+                        print("skipping?")         
+                        continue
                     if col == 1:
                         totalsal += value
                     if col == 2:
@@ -883,7 +889,7 @@ class staffSalaryModel(QtCore.QAbstractTableModel):
             if col == 2:
                 return self.employees[row].daysabsent
             if col == 3:
-                return int(self.employees[row].daysabsent*(self.employees[row].salary/30))
+                return int(self.employees[row].daysabsent*(self.employees[row].salary//30))
             if col == 4:
                 return self.employees[row].totalpay
             if col == 5:

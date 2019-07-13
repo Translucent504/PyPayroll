@@ -177,6 +177,6 @@ def makeSalarySummaryPdf(data, month, half):
     headers = [Paragraph("<b>Department</b>",Bstyle), Paragraph("<b>Total</b>",Bstyle), Paragraph("<b>Loans</b>",Bstyle), Paragraph("<b>Balance</b>",Bstyle)]
     tstyle = [('GRID',(0,0),(-1,-1), 1, colors.black),
             ('GRID',(0,-1),(-1,-1), 2,colors.black)]
-    footers = [[],[],data.pop()]
+    footers = [data.pop()]
     makedoc(data, "Salary Summary", month, half, headers, footers, tstyle, myCanvas)
     myCanvas.save()

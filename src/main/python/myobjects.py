@@ -92,6 +92,7 @@ class Employee(object):
 
         if self.department == 'Production':
             self.totalpay = self.meters * self.salary + self.redyeing * self.salary
+            self.totalpay = round(self.totalpay)
             self.balance = self.totalpay - self.loans
 
         elif self.salary_interval == 'Daily':
@@ -101,7 +102,7 @@ class Employee(object):
             self.balance = self.totalpay - self.loans
 
         elif self.salary_interval == 'Monthly':
-            self.attendeduction = self.daysabsent*(self.salary/30)
+            self.attendeduction = self.daysabsent*(self.salary//30)
             self.normalpay = self.salary - self.attendeduction
             self.overtimepay = self.overtimehours * self.overtimerate
             self.totalpay = self.normalpay
