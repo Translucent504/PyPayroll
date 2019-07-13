@@ -34,10 +34,8 @@ def loanAdjustmentModel():
     model.setRelation(0, QtSql.QSqlRelation('employees', 'empid', 'empname'))
     for i in range(model.columnCount()):
         model.setHeaderData(i, QtCore.Qt.Horizontal, Definitions.TableHeaders['loanadjustments'][i])
+    model.setFilter("amount > 0")
     model.select()
-
-
-
     return model
 
 
@@ -200,6 +198,18 @@ class salaryModel(QtCore.QAbstractTableModel):
                 elif col == 6:
                     return employee.balance
 
+    def setData(self, index, value, role):
+        if role == QtCore.Qt.EditRole:
+            if index.column() == 7:
+                id = self.employees[index.row()].id
+                with sqlite3.connect("test2.db") as conn:
+                    query = f"REPLACE INTO loanadjustments ( empid, amount ) VALUES ( {id}, {value} );"
+                    conn.execute(query)
+            self.dataChanged.emit(index,index)
+            return True
+        else:
+            return False
+
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
             if self.department.lower() == "production":
@@ -249,6 +259,11 @@ class salaryModel(QtCore.QAbstractTableModel):
             BigData.append(tmp)
         return BigData
 
+    def flags(self, index):
+        if index.column() == 7:
+            return QtCore.Qt.ItemIsEditable | super().flags(index)
+        else:
+            return super().flags(index)
 
 class salarySummaryModel(QtCore.QAbstractTableModel):
     def __init__(self, month='01', half=0):

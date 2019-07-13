@@ -170,7 +170,7 @@ def makeProductionPdf(data, month, half):
     myCanvas.save()
 
 def makeSalarySummaryPdf(data, month, half):
-    myCanvas = canvas.Canvas("grid.pdf", pagesize=A4)
+    myCanvas = canvas.Canvas("grid2.pdf", pagesize=A4)
     myCanvas.line(20,420,575,420)
     stylesheet = getSampleStyleSheet()
     Bstyle = stylesheet['Normal']
