@@ -5,7 +5,7 @@ import PySide2.QtPrintSupport
 from PySide2 import QtCore, QtGui, QtWidgets
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, letter
+from reportlab.lib.pagesizes import A4, letter,mm,inch
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (Frame, Paragraph, SimpleDocTemplate, Table,
@@ -64,7 +64,7 @@ def makedefaultform():
     #myCanvas.line(20,760,575,760)
 
 
-def makedoc(somedata, depart, month, half, headers, footers, tstyle, canv):
+def makedoc(somedata, depart, month, half, headers, footers, tstyle, canv, colW=None, rowH=None, TableAlign=None, FrameX=20, FrameY=430, FrameW=575-20, FrameH=320):
     """
     somedata: The Table data to display in main frame.
     depart: The name to display on top left.
@@ -83,11 +83,11 @@ def makedoc(somedata, depart, month, half, headers, footers, tstyle, canv):
     myCanvas.setLineWidth(.3)
     width, height = A4
     makeHeader(myCanvas, depart, month, half)
-    MainFrame = Frame(20,430,575-20,320, showBoundary=0,id ="MainFrame")
+    MainFrame = Frame(FrameX,FrameY,FrameW,FrameH, showBoundary=0,id ="MainFrame")
     tabledata = somedata
     tabledata.insert(0, headers)
     tabledata.extend(footers)
-    MainFrameTable = Table(tabledata, style =tstyle)
+    MainFrameTable = Table(tabledata,colW,rowH, style=tstyle, hAlign=TableAlign)
     MainFrame.addFromList([MainFrameTable], myCanvas)
     myCanvas.restoreState()
     
@@ -142,9 +142,10 @@ def makeStaffSalaryPdf(staffdata):
     myCanvas = canvas.Canvas("grid.pdf", pagesize=A4)
     stylesheet = getSampleStyleSheet()
     Bstyle = stylesheet['Normal']
-    headers = [Paragraph("<b>Name</b>",Bstyle),"Salary","#Absent","Absnt amnt","Total","Loans","Balance","Signature"]
+    headers = [Paragraph("<b>Name</b>",Bstyle),"Salary","Absnt","Minus","Total","Loans","Balance","Signature"]
     tstyle = [('GRID',(0,0),(-1,-1),1, colors.black),
-                                                ('GRID',(0,-1),(-1,-1),2,colors.black)]
+                                                ('GRID',(0,-1),(-1,-1),2,colors.black),
+                                                ('ALIGN',(1,1),(-1,-1),'RIGHT')]
     sal,deduct,total,bal,loan = 0,0,0,0,0
     for row in staffdata['table']:
         sal += int(float(row[1]))
@@ -153,7 +154,9 @@ def makeStaffSalaryPdf(staffdata):
         loan += int(float(row[5]))
         bal += int(float(row[6]))
     footers = [['',f'{sal}','',f'{deduct}',f'{total}',f'{loan}',f'{bal}','']]
-    makedoc(staffdata['table'], staffdata['department'],staffdata['month'], staffdata['half'], headers, footers, tstyle, myCanvas)
+    colsizes = [1.5*inch,0.8*inch,0.5*inch,0.5*inch,0.8*inch,0.8*inch,0.8*inch,1.5*inch]
+    tableAlign =['RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT','RIGHT']
+    makedoc(staffdata['table'], staffdata['department'],staffdata['month'], staffdata['half'], headers, footers, tstyle, myCanvas,colW=colsizes , rowH=0.7*inch, FrameY=20,FrameH=730)
     myCanvas.save()
 
 def makeProductionPdf(data, month, half):
@@ -170,13 +173,14 @@ def makeProductionPdf(data, month, half):
     myCanvas.save()
 
 def makeSalarySummaryPdf(data, month, half):
-    myCanvas = canvas.Canvas("grid2.pdf", pagesize=A4)
+    myCanvas = canvas.Canvas("grid.pdf", pagesize=A4)
     myCanvas.line(20,420,575,420)
     stylesheet = getSampleStyleSheet()
     Bstyle = stylesheet['Normal']
     headers = [Paragraph("<b>Department</b>",Bstyle), Paragraph("<b>Total</b>",Bstyle), Paragraph("<b>Loans</b>",Bstyle), Paragraph("<b>Balance</b>",Bstyle)]
     tstyle = [('GRID',(0,0),(-1,-1), 1, colors.black),
-            ('GRID',(0,-1),(-1,-1), 2,colors.black)]
+            ('GRID',(0,10),(-1,10), 2,colors.black),
+            ('SPAN',(0,11),(-1,11))]
     footers = [data.pop()]
     makedoc(data, "Salary Summary", month, half, headers, footers, tstyle, myCanvas)
     myCanvas.save()

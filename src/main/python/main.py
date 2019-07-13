@@ -281,14 +281,15 @@ class MainWindow(QtWidgets.QMainWindow):
             half = self.ui.payrollHalf.currentIndex()
             data = self.salsummarymodel.getPrintData(month,half)
             #foot = data.pop()
-            printdata = []
+            printdata = [['Loan Adjustments','','','']]
             rows, cols = self.loanadjustmentmodel.rowCount(), self.loanadjustmentmodel.columnCount()
-            for row in range(rows): 
+            for row in range(0, rows, 2): 
                 tmp = []
-                for col in range(cols):
-                    tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row,col),QtCore.Qt.DisplayRole))
-                tmp.append('')
-                tmp.append('')    
+                tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row,0),QtCore.Qt.DisplayRole))
+                tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row,1),QtCore.Qt.DisplayRole))
+                tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row+1,0),QtCore.Qt.DisplayRole)) 
+                tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row+1,1),QtCore.Qt.DisplayRole))    
+   
                 printdata.append(tmp)
             #overtimedata = self.staffsalarymodel.getOvertimeData(month+1, half)
             #tmp = ['Staff overtime',str(overtimedata[-1]),'', str(overtimedata[-1])]
