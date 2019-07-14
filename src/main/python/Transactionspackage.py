@@ -139,13 +139,9 @@ class newTransactionModel(QtCore.QAbstractTableModel):
         return super().flags(index)
 
 
-def watgetAllTransactions():
-        with sqlite3.connect('test2.db') as conn:
-            query = f'select * from transactionsnew where empid = {23}'
-            result = conn.execute(LUL).fetchall()
-            pprint.pprint(result)
 
-proxy = QtCore.QSortFilterProxyModel()
+
+""" proxy = QtCore.QSortFilterProxyModel()
 
 
 
@@ -155,3 +151,4 @@ view.setModel(newTransactionModel(23))
 view.show()
 exitcode = app.exec_()
 sys.exit(exitcode) 
+ """

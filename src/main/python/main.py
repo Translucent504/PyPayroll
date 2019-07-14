@@ -8,7 +8,7 @@ from models import employeeModel,attendanceModel,departmentModel,salaryModel,sal
 from addEmployeedlg import addEmployee
 from updateEmployeedlg import updateEmployee
 from transactiondlg import transactionDialog
-from printing import makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf, makeSalarySummaryPdf
+from printing import makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf, makeSalarySummaryPdf, makeStaffOvertimePdf
 from myobjects import Employee, Department
 from delegates import attendanceDelegate
 import pprint
@@ -259,6 +259,8 @@ class MainWindow(QtWidgets.QMainWindow):
         font.setPointSize(14)
         self.ui.tableView.setFont(font)
         self.ui.newtrans.clicked.connect(self.showNewTransDlg)
+        #self.ui.deltrans.clicked.connect()
+        #self.ui.disptrans.clicked.connect()
         self.ui.tableView.setModel(self.transactionmodel)
         self.ui.tableView.resizeColumnsToContents()
         self.ui.tableView.resizeRowsToContents()
@@ -323,8 +325,20 @@ class MainWindow(QtWidgets.QMainWindow):
             #makegrid(data, department, MONTHS[month], half)
             makeDepartmentPdf(departmentdata1, departmentdata2)
 
-        #elif STAFF OVERTIME:
-            #self.ui.staffsummarymodel.getOvertimeData() .... already implemented just need to add button to ui
+        elif self.ui.payrollStaffOvertimeRadio.isChecked():
+            half = self.ui.payrollHalf.currentIndex()
+            month = self.ui.payrollMonth.currentIndex()
+            data = self.staffsalarymodel.getOvertimeData(month+1, half)
+            tabledata = []
+            for row in range(len(data[0])-1):
+                tmp = []
+                tmp.append(data[row]['name'])
+                tmp.append(data[row]['overtimerate'])
+                tmp.append(data[row]['overtimehours'])
+                tmp.append(data[row]['overtimepay'])
+                tabledata.append(tmp)
+            tabledata.append(['','','',data[-1]])
+            makeStaffOvertimePdf(tabledata, MONTHS[month], half)
 
         elif self.ui.payrollProdRadio.isChecked():
             # get production data and send for printing
@@ -348,7 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
             #self.staffsalarymodel=staffSalaryModel()
             month = self.ui.payrollMonth.currentIndex()
             half = 2
-            data = self.staffsalarymodel.getPrintData(month)
+            data = self.staffsalarymodel.getPrintData(month) # dont need to add +1 coz its using the models own setMonth which adds 1 anyway
             staffdata = {}
             staffdata['table'] = data
             staffdata['month'] = MONTHS[month]
@@ -356,11 +370,17 @@ class MainWindow(QtWidgets.QMainWindow):
             staffdata['department'] = "Staff Salary"
             makeStaffSalaryPdf(staffdata)
 
-        reply = QtWidgets.QMessageBox.question(self, 'View Payroll','Open payroll PDF for printing?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-        if reply == QtWidgets.QMessageBox.Yes:
+        ShowPdf= QtWidgets.QMessageBox.question(self, 'View Payroll','Open payroll PDF for printing?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if ShowPdf == QtWidgets.QMessageBox.Yes:
             #open doc in adobe pdf
             QtGui.QDesktopServices.openUrl("grid.pdf")
-            
+        
+        # UpdateTransactions = QtWidgets.QMessageBox.question(self, 'View Payroll','Open payroll PDF for printing?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        # if UpdateTransactions == QtWidgets.QMessageBox.Yes:
+        #     with sqlite3.connect('test2.db') as conn:
+        #         query = f"select * from loanadjustments"
+        #         emps = conn.exec(query).fetchall()
+        #         conn.execmany(f"insert into newtransactions (?,?,?)")    
 
     def init_payroll_stackpage(self):
         self.ui.payrollDepartment.addItems(self.departments)

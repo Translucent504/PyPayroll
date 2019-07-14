@@ -172,6 +172,18 @@ def makeProductionPdf(data, month, half):
     makedoc(table, data["name"], month, half, headers, footers, tstyle, myCanvas)
     myCanvas.save()
 
+def makeStaffOvertimePdf(data, month, half):
+    myCanvas = canvas.Canvas("grid.pdf", pagesize=A4)
+    myCanvas.line(20,420,575,420)
+    stylesheet = getSampleStyleSheet()
+    Bstyle = stylesheet['Normal']
+    headers = [Paragraph("<b>Name</b>",Bstyle),Paragraph("<b>Rate</b>",Bstyle),Paragraph("<b>Hours</b>",Bstyle),Paragraph("<b>Total</b>",Bstyle)]
+    tstyle = [('GRID',(0,0),(-1,-1),1, colors.black),                                                
+                                                ('SPAN',(0,-2),(2,-1))]
+    footers = [[],[],["Received By:",'','','',''],[]]
+    makedoc(data, "Staff Overtime", month, half, headers, footers, tstyle, myCanvas)
+    myCanvas.save()
+
 def makeSalarySummaryPdf(data, month, half):
     myCanvas = canvas.Canvas("grid.pdf", pagesize=A4)
     myCanvas.line(20,420,575,420)

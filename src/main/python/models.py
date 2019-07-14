@@ -411,7 +411,7 @@ class salarySummaryModel(QtCore.QAbstractTableModel):
                     value = round(float(self.data(self.index(row,col), QtCore.Qt.DisplayRole)))
                     tmp.append(value)
                     if self.data(self.index(row,0),QtCore.Qt.DisplayRole) in ("Meters","Redyeing"):
-                        print("skipping?")         
+                                 
                         continue
                     if col == 1:
                         totalsal += value
@@ -949,7 +949,7 @@ class staffSalaryModel(QtCore.QAbstractTableModel):
         total = 0
         for emp in self.employees:
             emp.setAttendanceHalf(month, half)
-            if emp.overtimehours:
+            if emp.overtimehours: # and emp.department == "Staff" ( If we dont want to show department's staff overtime here):
                 emp.calculatePay()
                 tmp = {}
                 tmp["name"] = emp.name
