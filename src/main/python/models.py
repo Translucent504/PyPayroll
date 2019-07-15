@@ -793,6 +793,14 @@ class newTransactionModel(QtCore.QAbstractTableModel):
     def setEmployee(self, empid):
         self.employee = myobjects.Employee(empid)
 
+
+    @QtCore.Slot(object)
+    def setTransactions(self, data):
+        """Takes in an entire data dict and sets all model attributes accordingly,
+        sets the table query and updates model/view accordingly
+        """
+        pass
+
     def deletetransaction(self, index):
         transid = self.displaydata[index.row()]['transid']
         with sqlite3.connect('test2.db') as conn:
@@ -839,6 +847,8 @@ class newTransactionModel(QtCore.QAbstractTableModel):
                 return "Description"
 
     def setData(self, index, value, role):
+        """
+        """
         if role == QtCore.Qt.EditRole:
             row, col = index.row(), index.column()
             transid = self.transactiondata[row][0]

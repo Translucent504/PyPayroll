@@ -7,7 +7,7 @@ import mainPayrollWindow
 from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, newTransactionModel, staffSalaryModel, loanAdjustmentModel
 from addEmployeedlg import addEmployee
 from updateEmployeedlg import updateEmployee
-from transactiondlg import transactionDialog
+from transactiondlg import newTransactionDialog, dispTransactionDialog
 from printing import makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf, makeSalarySummaryPdf, makeStaffOvertimePdf
 from myobjects import Employee, Department
 from delegates import attendanceDelegate
@@ -242,25 +242,44 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.salsumarytable.resizeRowsToContents()
     
     def showNewTransDlg(self):
-        pass
-        """ 
+        """
+        newtransaction table fields:  id empid date credit debit description
+        """
+         
         @QtCore.Slot(object)
         def updateDB(data):
             with sqlite3.connect('test2.db') as conn:
-                _ = conn.execute('insert into transactions (empid, date, amount) values (:empid, :date, :amount)', data)
-            self.transactionmodel.setTransactions()
+                _ = conn.execute('insert into transactionsnew (empid, date, credit, debit) values (:empid, :date, :credit, :debit)', data)
+            self.transactionmodel.setEmployee(data['empid'])
+            self.transactionmodel.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.transactionmodel.columnCount()-1)
 
-        dlg = transactionDialog()
+        dlg = newTransactionDialog()
         dlg.dataready.connect(updateDB)
-        dlg.exec_() """
+        dlg.exec_() 
         
+    def showDispTransDlg(self):
+        """
+        Why not implement a set transaction method in the model which takes in the entire dict of data??? because we never allow individual setting of fields...
+        """
+        print("wat wtf")
+        @QtCore.Slot(object)
+        def setTransaction(data):
+
+            self.transactionmodel.setEmployee(data['empid'])
+            self.transactionmodel.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.transactionmodel.columnCount()-1)
+
+        dlg = dispTransactionDialog()
+        dlg.dataready.connect(setTransaction)
+        dlg.exec()
+
+
     def init_transaction_stackpage(self):
         font = QtGui.QFont()
         font.setPointSize(14)
         self.ui.tableView.setFont(font)
         self.ui.newtrans.clicked.connect(self.showNewTransDlg)
         #self.ui.deltrans.clicked.connect()
-        #self.ui.disptrans.clicked.connect()
+        self.ui.disptrans.clicked.connect(self.showDispTransDlg)
         self.ui.tableView.setModel(self.transactionmodel)
         self.ui.tableView.resizeColumnsToContents()
         self.ui.tableView.resizeRowsToContents()
