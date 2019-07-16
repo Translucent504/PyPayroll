@@ -19,6 +19,11 @@ class newTransactionDialog(QDialog):
         self.accepted.connect(self.makedict)
         self.loadDepList()
         self.ui.department.currentIndexChanged.connect(self.loadEmpList)
+        self.loadEmpList()
+        tmpdate = datetime.strftime(datetime.now(),'%d-%m-%y')
+        self.ui.date.setText(tmpdate)
+        self.ui.debit.setText('0')
+        self.ui.credit.setText('0')
     
     def loadDepList(self):
         with sqlite3.connect('test2.db') as conn:
@@ -64,6 +69,10 @@ class dispTransactionDialog(QDialog):
         self.accepted.connect(self.makedict)
         self.loadDepList()
         self.ui.department.currentIndexChanged.connect(self.loadEmpList)
+        self.loadEmpList()
+        self.ui.fromdate.setText('01-01-19')
+        self.ui.todate.setText('01-01-20')
+        
     
     def loadDepList(self):
         with sqlite3.connect('test2.db') as conn:
@@ -91,9 +100,7 @@ class dispTransactionDialog(QDialog):
         except:
             pass
         
-        credit = self.ui.credit.text()
-        debit = self.ui.debit.text()
-        self.data = {'todate':todate,'fromdate':fromdate, 'department':department, 'empid':empid, 'credit':credit, 'debit':debit}
+        self.data = {'todate':todate,'fromdate':fromdate, 'department':department, 'empid':empid}
         self.dataready.emit(self.data)
 
 

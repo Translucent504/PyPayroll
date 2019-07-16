@@ -4,7 +4,7 @@ from PySide2 import QtCore, QtGui, QtWidgets, QtSql , QtPrintSupport
 import sys
 import sqlite3
 import mainPayrollWindow
-from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, newTransactionModel, staffSalaryModel, loanAdjustmentModel
+from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, newTransactionModel, staffSalaryModel, loanAdjustmentModel, MyFilterModel
 from addEmployeedlg import addEmployee
 from updateEmployeedlg import updateEmployee
 from transactiondlg import newTransactionDialog, dispTransactionDialog
@@ -251,7 +251,7 @@ class MainWindow(QtWidgets.QMainWindow):
             with sqlite3.connect('test2.db') as conn:
                 _ = conn.execute('insert into transactionsnew (empid, date, credit, debit) values (:empid, :date, :credit, :debit)', data)
             self.transactionmodel.setEmployee(data['empid'])
-            self.transactionmodel.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.transactionmodel.columnCount()-1)
+            #self.transactionmodel.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.transactionmodel.columnCount()-1)
 
         dlg = newTransactionDialog()
         dlg.dataready.connect(updateDB)
@@ -259,28 +259,40 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def showDispTransDlg(self):
         """
-        Why not implement a set transaction method in the model which takes in the entire dict of data??? because we never allow individual setting of fields...
+        Sets filters in proxymodel
         """
-        print("wat wtf")
+        
         @QtCore.Slot(object)
         def setTransaction(data):
-
             self.transactionmodel.setEmployee(data['empid'])
-            self.transactionmodel.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.transactionmodel.columnCount()-1)
-
+            #self.transproxy.setSourceModel(self.transactionmodel)
+            self.transproxy.setFilterDate(data['fromdate'], data['todate'])
         dlg = dispTransactionDialog()
         dlg.dataready.connect(setTransaction)
         dlg.exec()
-
+    
+    @QtCore.Slot()
+    def deleteTransaction(self):
+        row = self.ui.tableView.currentIndex().row()
+        if row > -1:
+            reply = QtWidgets.QMessageBox.question(self, 'Confirm delete','Delete selected row?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.transactionmodel.deletetransaction(self.ui.tableView.currentIndex())
+                
+        else:
+            QtWidgets.QMessageBox.information(self, 'Nothing Selected', 'Please select a row to delete.', QtWidgets.QMessageBox.Ok)
 
     def init_transaction_stackpage(self):
         font = QtGui.QFont()
         font.setPointSize(14)
+        self.transproxy = MyFilterModel()
+        self.transproxy.setSourceModel(self.transactionmodel)
+
         self.ui.tableView.setFont(font)
         self.ui.newtrans.clicked.connect(self.showNewTransDlg)
-        #self.ui.deltrans.clicked.connect()
+        self.ui.deltrans.clicked.connect(self.deleteTransaction)
         self.ui.disptrans.clicked.connect(self.showDispTransDlg)
-        self.ui.tableView.setModel(self.transactionmodel)
+        self.ui.tableView.setModel(self.transproxy)
         self.ui.tableView.resizeColumnsToContents()
         self.ui.tableView.resizeRowsToContents()
         #self.ui.deltrans.clicked.connect(lambda : self.transactionmodel.deletetransaction(self.ui.tableView.currentIndex()))

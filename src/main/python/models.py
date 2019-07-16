@@ -4,6 +4,7 @@ use QDates.. : https://www.ics.com/blog/how-display-dates-using-qdate
 
 """
 from PySide2 import QtCore,QtGui,QtSql, QtWidgets
+from PySide2.QtCore import QDate, Qt
 import sys
 import Definitions
 import myobjects
@@ -782,7 +783,11 @@ class newTransactionModel(QtCore.QAbstractTableModel):
             result = conn.execute(query).fetchall()
         if result:
             self.alltransactiondata = result
+        self.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.columnCount()-1)
         #pprint.pprint(result)
+
+    
+
 
     @QtCore.Slot(object)
     def setDateRange(self, daterange):
@@ -792,19 +797,14 @@ class newTransactionModel(QtCore.QAbstractTableModel):
     @QtCore.Slot(int)    
     def setEmployee(self, empid):
         self.employee = myobjects.Employee(empid)
-
-
-    @QtCore.Slot(object)
-    def setTransactions(self, data):
-        """Takes in an entire data dict and sets all model attributes accordingly,
-        sets the table query and updates model/view accordingly
-        """
-        pass
+        self.getAllTransactions()
+        
 
     def deletetransaction(self, index):
-        transid = self.displaydata[index.row()]['transid']
+        transid = self.alltransactiondata[index.row()][0]
         with sqlite3.connect('test2.db') as conn:
-            conn.execute(f'delete from transactions where "transaction-id" = {transid}')   
+            conn.execute(f'delete from transactionsnew where "id" = {transid}')  
+        self.getAllTransactions() 
 
     def rowCount(self,parent=QtCore.QModelIndex()):
         if parent.isValid():
@@ -820,7 +820,7 @@ class newTransactionModel(QtCore.QAbstractTableModel):
         row, col = index.row(), index.column()
         if role == QtCore.Qt.DisplayRole:
             if col == 0:
-                return self.alltransactiondata[row][1]
+                return QDate.fromString(self.alltransactiondata[row][1], QtCore.Qt.ISODate)
             elif col == 1:
                 return self.alltransactiondata[row][2]
             elif col == 2:
@@ -847,20 +847,20 @@ class newTransactionModel(QtCore.QAbstractTableModel):
                 return "Description"
 
     def setData(self, index, value, role):
-        """
+        """TO BE IMPLEMENTED.. MAYBE WITH THE SAME POPUL DIALOG UPON EDIT REQUEST. LIKE EMPLOYEE TABLE
         """
         if role == QtCore.Qt.EditRole:
             row, col = index.row(), index.column()
-            transid = self.transactiondata[row][0]
+            transid = self.alltransactiondata[row][0]
             if col == 1:
-                query = f'update transactions set amount = {value} where "transaction-id" = {transid}'
+                query = f'update transactionsnew set amount = {value} where "transaction-id" = {transid}'
                 with sqlite3.connect('test2.db') as conn:
                     conn.execute(query)
             elif col == 2:
-                query = f'update transactions set date = {value} where "transaction-id" = {transid}'
+                query = f'update transactionsnew set date = {value} where "transaction-id" = {transid}'
                 with sqlite3.connect('test2.db') as conn:
                     conn.execute(query)
-            self.setTransactions()
+            self.getAllTransactions()
             self.dataChanged.emit(index,index)
             return True
         return False
@@ -972,6 +972,28 @@ class staffSalaryModel(QtCore.QAbstractTableModel):
         BigData.append(total) 
         return BigData
 
+class MyFilterModel(QtCore.QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.minDate = QDate.fromString('2019-01-01', QtCore.Qt.ISODate)
+        self.maxDate = QDate(datetime.now())
+
+    def setFilterDate(self, minDate, maxDate):
+        self.minDate = QDate.fromString(minDate, QtCore.Qt.ISODate)
+        self.maxDate = QDate.fromString(maxDate, QtCore.Qt.ISODate)
+        self.invalidateFilter()
+
+
+    def filterAcceptsRow(self, sourceRow, sourceParent):
+        dateindex = self.sourceModel().index(sourceRow, 0, sourceParent)
+        return (self.dateInRange(self.sourceModel().data(dateindex,QtCore.Qt.DisplayRole)))
+    
+    def dateInRange(self, date):
+        if isinstance(date, QtCore.QDateTime):
+            date = date.date()
+
+        return (    (not self.minDate.isValid() or date >= self.minDate)
+                and (not self.maxDate.isValid() or date <= self.maxDate))
         
 
 
@@ -981,7 +1003,7 @@ class staffSalaryModel(QtCore.QAbstractTableModel):
 # TESTING AREA 
 ################################  
 # model = attendanceModel2('01','Finish',2019,0)
-"""model = staffSalaryModel() 
+""" model = staffSalaryModel() 
 model.getOvertimeData(1,0)
  app = QtWidgets.QApplication()
 view = QtWidgets.QTableView()
