@@ -4,6 +4,7 @@ from PySide2.QtWidgets import QDialog, QApplication
 from PySide2.QtCore import Signal, Slot
 import sqlite3
 from datetime import datetime
+from myobjects import Employee
 
 
 class newTransactionDialog(QDialog):
@@ -71,7 +72,8 @@ class dispTransactionDialog(QDialog):
         self.ui.department.currentIndexChanged.connect(self.loadEmpList)
         self.loadEmpList()
         self.ui.fromdate.setText('01-01-19')
-        self.ui.todate.setText('01-01-20')
+        self.dateNow = datetime.strftime(datetime.now(), '%d-%m-%y')
+        self.ui.todate.setText(self.dateNow)
         
     
     def loadDepList(self):
@@ -85,9 +87,10 @@ class dispTransactionDialog(QDialog):
         self.ui.employee.clear()
         department = self.ui.department.currentText()
         with sqlite3.connect('test2.db') as conn:
-            employees = conn.execute('select empid, "empname" from employees where department = :dept',{'dept':department})
-        self.employees = {emp[1]:emp[0] for emp in employees.fetchall()}
-        self.ui.employee.addItems(list(self.employees.keys()))
+            employees = conn.execute('select empid from employees where department = :dept',{'dept':department})
+        #print(employees.fetchall())
+        self.employees = [Employee(empid[0]) for empid in employees.fetchall()]
+        self.ui.employee.addItems([emp.name for emp in self.employees])
         
     def makedict(self):
         todate = datetime.strptime(self.ui.todate.text(), '%d-%m-%y')
@@ -96,9 +99,10 @@ class dispTransactionDialog(QDialog):
         fromdate = datetime.strftime(fromdate,'%Y-%m-%d')
         department = self.ui.department.currentText()
         try:
-            empid = self.employees[self.ui.employee.currentItem().text()]
+            empid = self.employees[self.ui.employee.currentIndex().row()].id
+            
         except:
-            pass
+            print("Error in Transaction Display makedict")
         
         self.data = {'todate':todate,'fromdate':fromdate, 'department':department, 'empid':empid}
         self.dataready.emit(self.data)

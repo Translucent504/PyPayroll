@@ -11,6 +11,7 @@ from transactiondlg import newTransactionDialog, dispTransactionDialog
 from printing import makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf, makeSalarySummaryPdf, makeStaffOvertimePdf
 from myobjects import Employee, Department
 from delegates import attendanceDelegate
+from datetime import datetime
 import pprint
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 # TODO "INPUT VALIDATION, MODERN INPUT FORMS, DELEGATE SETUP "
@@ -243,7 +244,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def showNewTransDlg(self):
         """
-        newtransaction table fields:  id empid date credit debit description
+        transactionsnew table fields:  id empid date credit debit description
         """
          
         @QtCore.Slot(object)
@@ -307,13 +308,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.salsumarytable_2.resizeColumnsToContents()
         self.ui.salsumarytable_2.resizeRowsToContents()
 
+    def askToUpdateTransactions(self):
+        """Automatically makes entry into the 
+        transactionsnew table of all employees that exist in the
+        loan adjustments table.
+        """
+
+        UpdateTransactions = QtWidgets.QMessageBox.question(self, 'Update Transactions','Update Transactions?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if UpdateTransactions == QtWidgets.QMessageBox.Yes:
+            with sqlite3.connect('test2.db') as conn:
+                query = "select * from loanadjustments" #this returns (empid , credit)
+                emps = conn.execute(query).fetchall()
+                date = datetime.strftime(datetime.now(), "%Y-%m-%d")
+                list_of_transactions = [(empid, date, credit, 0, 'LoanAdj') for empid, credit in emps]               
+                conn.executemany("insert into transactionsnew (empid, date, credit, debit, description) values (?,?,?,?,?)", list_of_transactions)  # this needs (empid, date, credit, debit, description)
+            self.transactionmodel.getAllTransactions() # Updates / refreshes the tableview
+
     def setupPrinting(self):
         if self.ui.payrollSummaryRadio.isChecked():
             # get salary summmary data and send for printing
             month = self.ui.payrollMonth.currentIndex()
             half = self.ui.payrollHalf.currentIndex()
             data = self.salsummarymodel.getPrintData(month,half)
-            #foot = data.pop()
             printdata = [['Loan Adjustments','','','']]
             rows, cols = self.loanadjustmentmodel.rowCount(), self.loanadjustmentmodel.columnCount()
             for row in range(0, rows, 2): 
@@ -322,13 +338,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row,1),QtCore.Qt.DisplayRole))
                 tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row+1,0),QtCore.Qt.DisplayRole)) 
                 tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row+1,1),QtCore.Qt.DisplayRole))    
-   
                 printdata.append(tmp)
-            #overtimedata = self.staffsalarymodel.getOvertimeData(month+1, half)
-            #tmp = ['Staff overtime',str(overtimedata[-1]),'', str(overtimedata[-1])]
             data.extend(printdata)
-            pprint.pprint(data)
-            #data.append(foot)
             makeSalarySummaryPdf(data, MONTHS[month], half)
         
 
@@ -406,12 +417,9 @@ class MainWindow(QtWidgets.QMainWindow):
             #open doc in adobe pdf
             QtGui.QDesktopServices.openUrl("grid.pdf")
         
-        # UpdateTransactions = QtWidgets.QMessageBox.question(self, 'View Payroll','Open payroll PDF for printing?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-        # if UpdateTransactions == QtWidgets.QMessageBox.Yes:
-        #     with sqlite3.connect('test2.db') as conn:
-        #         query = f"select * from loanadjustments"
-        #         emps = conn.exec(query).fetchall()
-        #         conn.execmany(f"insert into newtransactions (?,?,?)")    
+        self.askToUpdateTransactions()
+        
+          
 
     def init_payroll_stackpage(self):
         self.ui.payrollDepartment.addItems(self.departments)
