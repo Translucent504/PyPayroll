@@ -11,9 +11,11 @@ class AttendanceEditorWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout = QtWidgets.QHBoxLayout(self)
         self.line1 = QtWidgets.QLineEdit(self)
         self.line2 = QtWidgets.QLineEdit(self)
+        self.line1.setMinimumSize(2,2)
+        self.line2.setMinimumSize(2,2)
         rx1 = QRegExp("[aApPlL]")
         self.line1.setValidator(QRegExpValidator(rx1))
         self.layout.setContentsMargins(1,0,0,1)

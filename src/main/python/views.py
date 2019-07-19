@@ -44,14 +44,7 @@ class attendanceTableView(QtWidgets.QTableView):
                 self.edit(self.currentIndex())
         else:
             # any other key was pressed, inform base class
-            
-            QtWidgets.QTableView.keyPressEvent(self,event)
-            #QtWidgets.QAbstractItemView.keyPressEvent(self,event)
-
-
-
-
-
+            super().keyPressEvent(event)
 
 
 
