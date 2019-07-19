@@ -7,7 +7,7 @@ from PySide2.QtCore import QRegExp
 
 
 class AttendanceEditorWidget(QtWidgets.QWidget):
-    editingFinished = QtCore.Signal()
+
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -21,7 +21,10 @@ class AttendanceEditorWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.line1)
         self.layout.addWidget(self.line2)
         self.line2.setMaxLength(2)
+        self.line1.setText('P')
+        self.line2.setText('0')
         self.line1.textChanged.connect(self.line2.setFocus)
+        # self.line1.setFocus()
         self.setFocusProxy(self.line1)
     
 
@@ -69,12 +72,22 @@ class attendanceDelegate(QtWidgets.QStyledItemDelegate):
         This returns the widget that the View will use when user requests to edit the given index of model.
         """
         editor = AttendanceEditorWidget(parent)
-        
+        editor.installEventFilter(self)
         """ atten, ovt = index.data(QtCore.Qt.DisplayRole)
         editor.line1.setText(atten)
         editor.line2.setText(ovt) """
         return editor
     
+    def eventFilter(self, editor, event):
+        if event.type() == QtCore.QEvent.KeyPress and event.key() in (QtCore.Qt.Key_Return,QtCore.Qt.Key_Enter):
+            if editor.line1.hasFocus():
+                editor.line2.setFocus()
+                editor.line2.selectAll()
+                return True
+            elif editor.line2.hasFocus():
+                return False
+        return False
+
     def setModelData(self, editor, model, index):
         """
         This sets the model data by extracting relevant data 

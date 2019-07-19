@@ -206,6 +206,7 @@ class salaryModel(QtCore.QAbstractTableModel):
                 with sqlite3.connect("test2.db") as conn:
                     query = f"REPLACE INTO loanadjustments ( empid, amount ) VALUES ( {id}, {value} );"
                     conn.execute(query)
+                    self.initEmployeePay() #acts as a pseudo update for the table
             self.dataChanged.emit(index,index)
             return True
         else:
@@ -489,7 +490,7 @@ class attendanceModel(QtCore.QAbstractTableModel):
         if self.department == "Production":
             return 4
         lengthofmonth = monthrange(self.year, int(self.month))[1]
-        return 6 + (15 if self.half == 0 else lengthofmonth-15)
+        return 7 + (15 if self.half == 0 else lengthofmonth-15)
 
 
     def data(self, index, role):
