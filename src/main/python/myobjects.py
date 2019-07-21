@@ -20,6 +20,12 @@ class Employee(object):
         with sqlite3.connect('test2.db') as conn:
             empdata = conn.execute("""select "empname", department, designation, salary, "salaryint","""
                                     """ "overtimerate" from employees where empid = :id""",{'id':self.id})
+            try:
+                self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]
+                if self.loans == None:
+                    self.loans = 0
+            except:
+                self.loans = 0
         self.name, self.department, self.designation, self.salary, self.salary_interval, self.overtimerate = empdata.fetchone()  
 
     def setAttendanceDict(self, month, year=2019):
@@ -51,22 +57,22 @@ class Employee(object):
                 self.dayspresent = conn.execute('select count(*) from attendance WHERE status = "P" and date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 self.overtimehours = conn.execute('select SUM("overtimeworked") from attendance WHERE date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and date <= :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
-                try:
+                """ try:
                     self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]
                     if self.loans == None:
                         self.loans = 0
                 except:
-                    self.loans = 0
+                    self.loans = 0 """
             elif half == 1:
                 self.dayspresent = conn.execute('select count(*) from attendance WHERE status = "P" and date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 self.overtimehours = conn.execute('select SUM("overtimeworked") from attendance WHERE date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
                 self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and date > :datelimit and empid = :id',{'month':f"{year}-{month}-%",'datelimit':f"{year}-{month}-15",'id':self.id}).fetchone()[0]
-                try:
+                """ try:
                     self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]        
                     if self.loans == None:
                         self.loans = 0
                 except:
-                    self.loans = 0
+                    self.loans = 0 """
 
     def setAttendanceFull(self, month, year=2019):
         """
@@ -76,12 +82,12 @@ class Employee(object):
             self.dayspresent = conn.execute('select count(*) from attendance WHERE status = "P" and date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
             #self.overtimehours = conn.execute('select SUM("overtimeworked") from attendance WHERE date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
             self.daysabsent = conn.execute('select count(*) from attendance WHERE status = "A" and date like :month and empid = :id',{'month':f"{year}-{month}-%",'id':self.id}).fetchone()[0]
-            try:
+            """ try:
                 self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]        
                 if self.loans == None:
                     self.loans = 0
             except:
-                self.loans = 0
+                self.loans = 0 """
 
     def calculatePay(self):
         """

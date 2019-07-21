@@ -6,11 +6,16 @@ from delegates import attendanceDelegate
 # https://github.com/kevinfol/QtSpreadSheet/tree/08d57025bab7f0addf7ea37843b0ed7eb3682a54/QtSpreadSheet
 
 class attendanceTableView(QtWidgets.QTableView):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, model = attendanceModel('01','Finish')):
+        """
+        This init method is unnecessary since everything is being manually set in the mainwindow's init Ui anyway.
+        """
         super().__init__(parent)
-        self.attenmodel = attendanceModel('01','Finish')
+        self.attenmodel = model
         self.setModel(self.attenmodel)
-        self.setItemDelegate(attendanceDelegate())
+        self.delegate = attendanceDelegate()
+        self.setItemDelegate(self.delegate)
+        self.delegate.closeEditor.connect(self.setFocus)# its being overwritten
 
     def keyPressEvent(self, event):
         """Custom Keypress Event for a tableview
@@ -76,8 +81,8 @@ def keyPressEvent(self, event):
     
 
 
-app = QtWidgets.QApplication()
+""" app = QtWidgets.QApplication()
 view = attendanceTableView()
 view.showMaximized()
 exitcode = app.exec_()
-sys.exit(exitcode) 
+sys.exit(exitcode) """ 

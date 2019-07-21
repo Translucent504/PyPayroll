@@ -12,6 +12,7 @@ import sqlite3
 from collections import Counter
 from calendar import monthrange
 from datetime import datetime
+import pprint
 db = QtSql.QSqlDatabase.addDatabase('QSQLITE')
 
 # THE DATABASE/ATTENDANCE TABLE??? WILL BE SEPARATE FOR EACH YEAR....
@@ -21,21 +22,9 @@ ok = db.open()
 
 def employeeModel():
     model = QtSql.QSqlTableModel()
-    #model.setEditStrategy(model.OnFieldChange)
     model.setTable('employees')
     for i in range(model.columnCount()):
         model.setHeaderData(i, QtCore.Qt.Horizontal, Definitions.TableHeaders['employees'][i])
-    model.select()
-    return model
-
-def loanAdjustmentModel():
-    model = QtSql.QSqlRelationalTableModel()
-    model.setEditStrategy(model.OnFieldChange)
-    model.setTable('loanadjustments')
-    model.setRelation(0, QtSql.QSqlRelation('employees', 'empid', 'empname'))
-    for i in range(model.columnCount()):
-        model.setHeaderData(i, QtCore.Qt.Horizontal, Definitions.TableHeaders['loanadjustments'][i])
-    model.setFilter("amount > 0")
     model.select()
     return model
 
@@ -75,6 +64,79 @@ def attendanceModelData(year='2019',month='01', department='Talking', half=0):
             empdict[row[2]] = {row[0]:(row[4], row[5])}
     
     return empdict,departdata,ids
+
+
+class newLoanAdjustmentModel(QtCore.QAbstractTableModel):
+    def __init__(self):
+        super().__init__()
+        self.loadempids()
+    
+    def loadempids(self):
+        with sqlite3.connect("test2.db") as conn:
+            query = "SELECT * FROM loanadjustments where amount > 0"
+            result = conn.execute(query).fetchall()
+        self.employees = [myobjects.Employee(empid) for empid, _ in result]
+
+    def rowCount(self,parent=QtCore.QModelIndex()):
+        if parent.isValid():
+            return 0
+        return len(self.employees)
+
+    def columnCount(self,parent=QtCore.QModelIndex()):
+        if parent.isValid():
+            return 0
+        return 2
+
+    def data(self, index, role):
+        row, col = index.row(), index.column()
+        if role == QtCore.Qt.DisplayRole:
+            if col == 0:
+                return self.employees[row].name
+            if col == 1:
+                return self.employees[row].loans                
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
+            if section == 0:
+                return "Name"
+            elif section == 1:
+                return "Amount"
+
+    def setData(self, index, value, role):
+        if role == QtCore.Qt.EditRole:
+            row, col = index.row(), index.column()
+            if col == 1 and value:
+                amount = value
+                empid = self.employees[row].id
+                with sqlite3.connect("test2.db") as conn:
+                    query = f"update loanadjustments set amount = {amount} where empid = {empid}"
+                    conn.execute(query)
+                self.loadempids()
+                self.dataChanged.emit(index,index)
+                return True
+        return False
+
+    def flags(self, index):
+        if index.column() == 1:
+            return QtCore.Qt.ItemIsEditable | super().flags(index)
+        else:
+            return super().flags(index)  
+
+    def sync(self):
+        pass
+        
+def loanAdjustmentModel():
+    """Deprecated?"""
+    model = loanAdjustmentModelnew()
+    model.setEditStrategy(model.OnManualSubmit)
+    model.setTable('loanadjustments')
+    model.setRelation(0, QtSql.QSqlRelation('employees', 'empid', 'empname'))
+
+    for i in range(model.columnCount()):
+        model.setHeaderData(i, QtCore.Qt.Horizontal, Definitions.TableHeaders['loanadjustments'][i])
+    model.setFilter("amount > 0")
+    model.select()
+    return model
 
 class salaryModel(QtCore.QAbstractTableModel):
     def __init__(self):
@@ -204,9 +266,9 @@ class salaryModel(QtCore.QAbstractTableModel):
             if index.column() == 7:
                 id = self.employees[index.row()].id
                 with sqlite3.connect("test2.db") as conn:
-                    query = f"REPLACE INTO loanadjustments ( empid, amount ) VALUES ( {id}, {value} );"
+                    query = f"REPLACE INTO loanadjustments ( empid, amount ) VALUES ( {id}, {value} )"
                     conn.execute(query)
-                    self.initEmployeePay() #acts as a pseudo update for the table
+                self.setDepartment(self.department) #acts as a pseudo update for the table
             self.dataChanged.emit(index,index)
             return True
         else:
@@ -762,16 +824,10 @@ class oldTransactionModel(QtCore.QAbstractTableModel):
             return super().flags(index)
 
 class newTransactionModel(QtCore.QAbstractTableModel):
-    def __init__(self, employeeid, daterange=[]):
+    def __init__(self, employeeid):
         super().__init__()
         self.employee = myobjects.Employee(employeeid)
         self.getAllTransactions()
-        #self.department = myobjects.Department(department)
-        #self.startdate = startdate
-        #self.enddate = enddate
-        #self.employees = self.department.employees
-        #self.empids = [employee.id for employee in self.employees]
-        #self.setTransactions()
 
     def getAllTransactions(self):
         with sqlite3.connect('test2.db') as conn:
@@ -785,27 +841,34 @@ class newTransactionModel(QtCore.QAbstractTableModel):
         if result:
             self.alltransactiondata = result
         self.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.columnCount()-1)
-        #pprint.pprint(result)
+        #pprint.pprint(self.alltransactiondata)
 
     
-
-
-    @QtCore.Slot(object)
-    def setDateRange(self, daterange):
-        #print(enddate.toPython())
-        self.daterange = daterange #??????
     
     @QtCore.Slot(int)    
     def setEmployee(self, empid):
         self.employee = myobjects.Employee(empid)
         self.getAllTransactions()
         
+    # THE ROWCOUNT ISNT UPDATING WHEN WE INSERT A TRANSACTION??...????
+    # This is the way to append information to table.. not reload the entire model... F
+    @QtCore.Slot(object)
+    def appendTransaction(self, data):
+        """Appends the data at the end of table"""
+        count = self.rowCount()
+        self.beginInsertRows(QtCore.QModelIndex(), count, count)    
+        with sqlite3.connect('test2.db') as conn:
+            _ = conn.execute('insert into transactionsnew (empid, date, credit, debit) values (:empid, :date, :credit, :debit)', data)
+        self.setEmployee(data['empid'])
+        self.endInsertRows()
 
     def deletetransaction(self, index):
+        self.beginRemoveRows(QtCore.QModelIndex(), 0, 0)
         transid = self.alltransactiondata[index.row()][0]
         with sqlite3.connect('test2.db') as conn:
             conn.execute(f'delete from transactionsnew where "id" = {transid}')  
         self.getAllTransactions() 
+        self.endRemoveRows()
 
     def rowCount(self,parent=QtCore.QModelIndex()):
         if parent.isValid():
@@ -849,28 +912,32 @@ class newTransactionModel(QtCore.QAbstractTableModel):
 
     def setData(self, index, value, role):
         """TO BE IMPLEMENTED.. MAYBE WITH THE SAME POPUL DIALOG UPON EDIT REQUEST. LIKE EMPLOYEE TABLE
+        datawidgetmapper???
         """
-        if role == QtCore.Qt.EditRole:
+        if role == QtCore.Qt.EditRole and not value == "":
             row, col = index.row(), index.column()
             transid = self.alltransactiondata[row][0]
-            if col == 1:
-                query = f'update transactionsnew set amount = {value} where "transaction-id" = {transid}'
+            if col == 2:
+                query = f'update transactionsnew set credit = {value} where id = {transid}'
                 with sqlite3.connect('test2.db') as conn:
                     conn.execute(query)
-            elif col == 2:
-                query = f'update transactionsnew set date = {value} where "transaction-id" = {transid}'
+            elif col == 3:
+                query = f'update transactionsnew set debit = {value} where id = {transid}'
                 with sqlite3.connect('test2.db') as conn:
                     conn.execute(query)
+            """ elif col == 5:
+                query = f'update transactionsnew set description = {value} where id = {transid}' """
             self.getAllTransactions()
             self.dataChanged.emit(index,index)
             return True
         return False
 
     def flags(self, index):
-        # if not index.column() == 0:
-        #     return QtCore.Qt.ItemIsEditable | super().flags(index)
-        # else:
-        return super().flags(index)
+        # wtf should be 2,3 for credit debit
+        if not index.column() in (0,1):
+            return QtCore.Qt.ItemIsEditable | super().flags(index)
+        else:
+            return super().flags(index)
 
 class staffSalaryModel(QtCore.QAbstractTableModel):
     def __init__(self):
@@ -974,6 +1041,7 @@ class staffSalaryModel(QtCore.QAbstractTableModel):
         return BigData
 
 class MyFilterModel(QtCore.QSortFilterProxyModel):
+    """This is for the transaction page to filter dates"""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.minDate = QDate.fromString('2019-01-01', QtCore.Qt.ISODate)
@@ -996,6 +1064,49 @@ class MyFilterModel(QtCore.QSortFilterProxyModel):
         return (    (not self.minDate.isValid() or date >= self.minDate)
                 and (not self.maxDate.isValid() or date <= self.maxDate))
         
+class productionModel(QtCore.QAbstractTableModel):
+    """This is for the attendance table to display if department is set to
+    production
+    """
+    def __init__(self):
+        super().__init__()
+
+    def rowCount(self,parent=QtCore.QModelIndex()):
+        if parent.isValid():
+            return 0
+        return len(self.production)
+
+    def columnCount(self,parent=QtCore.QModelIndex()):
+        if parent.isValid():
+            return 0
+        return 3
+
+    def data(self, index, role):
+        row, col = index.row(), index.column()
+        if role == QtCore.Qt.DisplayRole:
+            pass
+
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
+            if section == 0:
+                return "Name"
+            if section == 1:
+                return "Meters"
+            if section == 2:
+                return "Redyeing"
+
+    def setData(self, index, value, role):
+        if role == QtCore.Qt.EditRole:
+            row, col = index.row(), index.column()
+            pass
+            return True
+        return False
+
+    def flags(self, index):
+        if index.column() in (1,2):
+            return QtCore.Qt.ItemIsEditable | super().flags(index)
+        else:
+            return super().flags(index)
 
 
 

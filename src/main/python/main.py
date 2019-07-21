@@ -4,21 +4,27 @@ from PySide2 import QtCore, QtGui, QtWidgets, QtSql , QtPrintSupport
 import sys
 import sqlite3
 import mainPayrollWindow
-from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, newTransactionModel, staffSalaryModel, loanAdjustmentModel, MyFilterModel
+from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, newTransactionModel, staffSalaryModel, loanAdjustmentModel, MyFilterModel, newLoanAdjustmentModel
 from addEmployeedlg import addEmployee
 from updateEmployeedlg import updateEmployee
 from transactiondlg import newTransactionDialog, dispTransactionDialog
 from printing import makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf, makeSalarySummaryPdf, makeStaffOvertimePdf
 from myobjects import Employee, Department
 from delegates import attendanceDelegate
+from views import attendanceTableView
 from datetime import datetime
 import pprint
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 # TODO "INPUT VALIDATION, MODERN INPUT FORMS, DELEGATE SETUP "
-
+"""
+NOTES: I HAVE INTRODUCED THE CUSTOM TABLEVIEW INTO THE MAINPAYROLLWINDOW.PY FILE WHICH WILL GET OVERWRITTEN WHENEVER A CHANGE TO UI IS MADE...
+"""
 import sys
 
 class MainWindow(QtWidgets.QMainWindow):
+
+    updateRequested = QtCore.Signal()
+
     def __init__(self):
         super().__init__()
         self.ui = mainPayrollWindow.Ui_MainWindow()
@@ -40,7 +46,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.transactionmodel = newTransactionModel(23)
         self.salsummarymodel = salarySummaryModel()
         self.staffsalarymodel = staffSalaryModel()
-        self.loanadjustmentmodel = loanAdjustmentModel()
+        self.loanadjustmentmodel = newLoanAdjustmentModel()
         #self.init_menubar()
         self.init_emp_stackpage() 
         self.init_attend_stackpage()
@@ -164,6 +170,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.empTable.setFont(font)
         self.ui.empTable.setModel(self.empmodel)
         header = self.ui.empTable.horizontalHeader() # ???
+        self.ui.empdepoption.clear()
         self.ui.empdepoption.addItem('All')
         self.ui.empdepoption.addItems(self.departments)
         self.ui.empdepoption.currentTextChanged.connect(self.filterEmpTable)
@@ -180,6 +187,9 @@ class MainWindow(QtWidgets.QMainWindow):
         font = QtGui.QFont()
         font.setPointSize(12)
         self.ui.atntable.setFont(font)
+        self.ui.monthoption.clear()
+        self.ui.halfoption.clear()               
+        self.ui.depoption.clear()
         self.ui.monthoption.addItems(MONTHS)
         self.ui.halfoption.addItems(['First Half (1 - 15)','Second Half (16 - End of month)'])               
         self.ui.depoption.addItems(self.departments) 
@@ -190,11 +200,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.halfoption.currentIndexChanged.connect(self.ui.atntable.resizeColumnsToContents)
         self.ui.depoption.currentTextChanged.connect(self.ui.atntable.resizeColumnsToContents)
         self.ui.atntable.setItemDelegate(self.atndelegate)
+        self.atndelegate.closeEditor.connect(self.ui.atntable.setFocus)
         self.ui.atntable.setModel(self.atnmodel)
-        #self.ui.atntable.resizeColumnsToContents()
-        #self.ui.atntable.resizeRowsToContents()
-        #self.ui.atntable.horizontalHeader().setStretchLastSection(True)
-
+        
     def updateAttendancePage(self):
         with sqlite3.connect('test2.db') as conn:
             self.departments = conn.execute('SELECT department FROM departments').fetchall()
@@ -210,11 +218,14 @@ class MainWindow(QtWidgets.QMainWindow):
         font = QtGui.QFont()
         font.setPointSize(14)
         self.ui.saldeptable.setFont(font)
+        self.ui.monthoption_2.clear()
+        self.ui.halfoption_2.clear()
         self.ui.monthoption_2.addItems(['January','February','March','April','May','June','July','August','September','October','November','December'])
         self.ui.halfoption_2.addItems(['First Half (1 - 15)','Second Half (16 - End of month)'])
         with sqlite3.connect('test2.db') as conn:
             departments = conn.execute('SELECT department FROM departments').fetchall()
         departments = [x[0] for x in departments]
+        self.ui.depoption_2.clear()
         self.ui.depoption_2.addItems(self.departments) 
         self.ui.monthoption_2.currentIndexChanged.connect(self.salarymodel.setMonth)
         self.ui.halfoption_2.currentIndexChanged.connect(self.salarymodel.setHalf)
@@ -222,7 +233,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.salarymodel.norecord.connect(self.showNoRecordError)
         self.salarymodel.initEmployees()
         self.salarymodel.initEmployeePay()
-        
         self.ui.saldeptable.setModel(self.salarymodel)
         self.ui.saldeptable.resizeColumnsToContents()
         self.ui.saldeptable.resizeRowsToContents()
@@ -231,13 +241,15 @@ class MainWindow(QtWidgets.QMainWindow):
         font = QtGui.QFont()
         font.setPointSize(14)
         self.ui.salsumarytable.setFont(font)
+        self.ui.salmonthoption.clear()
+        self.ui.salhalfoption.clear()
         self.ui.salmonthoption.addItems(['January','February','March','April','May','June','July','August','September','October','November','December'])
         self.ui.salhalfoption.addItems(['First Half (1 - 15)','Second Half (16 - End of month)'])
         self.ui.salmonthoption.currentIndexChanged.connect(self.salsummarymodel.setMonth)
         self.ui.salhalfoption.currentIndexChanged.connect(self.salsummarymodel.setHalf)
         self.ui.salsumarytable.setModel(self.salsummarymodel)
         self.ui.loanAdjustmentsTable.setModel(self.loanadjustmentmodel)
-        self.ui.loanAdjustmentsTable.viewportEntered.connect(self.loanadjustmentmodel.select)
+        self.loanadjustmentmodel.dataChanged.connect(lambda : self.salsummarymodel.setHalf(self.ui.salhalfoption.currentIndex()))
         self.ui.loanAdjustmentsTable.resizeColumnsToContents()
         self.ui.salsumarytable.resizeColumnsToContents()
         self.ui.salsumarytable.resizeRowsToContents()
@@ -247,15 +259,14 @@ class MainWindow(QtWidgets.QMainWindow):
         transactionsnew table fields:  id empid date credit debit description
         """
          
-        @QtCore.Slot(object)
+        """  @QtCore.Slot(object)
         def updateDB(data):
-            with sqlite3.connect('test2.db') as conn:
-                _ = conn.execute('insert into transactionsnew (empid, date, credit, debit) values (:empid, :date, :credit, :debit)', data)
+        
             self.transactionmodel.setEmployee(data['empid'])
-            #self.transactionmodel.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.transactionmodel.columnCount()-1)
+            #self.transactionmodel.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.transactionmodel.columnCount()-1) """
 
         dlg = newTransactionDialog()
-        dlg.dataready.connect(updateDB)
+        dlg.dataready.connect(self.transactionmodel.appendTransaction)
         dlg.exec_() 
         
     def showDispTransDlg(self):
@@ -303,6 +314,7 @@ class MainWindow(QtWidgets.QMainWindow):
         font.setPointSize(14)
         self.ui.salsumarytable_2.setFont(font)
         self.ui.salmonthoption_2.currentIndexChanged.connect(self.staffsalarymodel.setMonth)
+        self.ui.salmonthoption_2.clear()
         self.ui.salmonthoption_2.addItems(MONTHS)
         self.ui.salsumarytable_2.setModel(self.staffsalarymodel)
         self.ui.salsumarytable_2.resizeColumnsToContents()
@@ -422,34 +434,54 @@ class MainWindow(QtWidgets.QMainWindow):
           
 
     def init_payroll_stackpage(self):
+        self.ui.payrollDepartment.clear()
+        self.ui.payrollDepartment_3.clear()
         self.ui.payrollDepartment.addItems(self.departments)
         self.ui.payrollDepartment_3.addItems(self.departments)
+        self.ui.payrollMonth.clear()
         self.ui.payrollMonth.addItems(MONTHS)
+        self.ui.payrollMonth_3.clear()
         self.ui.payrollMonth_3.addItems(MONTHS)
+        self.ui.payrollHalf_3.clear()
         self.ui.payrollHalf_3.addItems(["1 - 15","15 - end of month"])
+        self.ui.payrollHalf.clear()
         self.ui.payrollHalf.addItems(["1 - 15","15 - end of month"])
         prod = Department("Production")
         self.productionemployees = prod.employees
         QtCore.QObject.connect(self.ui.payrollSummaryRadio, QtCore.SIGNAL("toggled(bool)"), self.ui.payrollMonth.setEnabled)
+        self.ui.payrollProduction.clear()
         self.ui.payrollProduction.addItems([emp.name for emp in self.productionemployees])
         self.ui.genPayroll.clicked.connect(self.setupPrinting)
         
 
     def switchstackto(self, index):
         if index == 0:
-            self.ui.empTable.setModel(self.empmodel)
+            pass
+            #self.ui.empTable.setModel(self.empmodel)
+            #self.init_emp_stackpage() 
         elif index == 1:
-            self.ui.deptable.setModel(self.deptmodel)
-        elif index == 2:    
-            self.updateAttendancePage()
-        """ elif index == 3:
-            self.ui.saldeptable.setModel(self.salarymodel)
-        elif index == 4:
-            self.ui.salsumarytable.setModel(self.salsummarymodel)
-        elif index == 5:
-            self.ui.tableView.setModel(self.transactionmodel)
-        elif index == 7:
-            self.ui.salsumarytable_2.setModel(self.staffsalarymodel) """
+            pass
+            #self.ui.deptable.setModel(self.deptmodel)
+            #self.init_dept_stackpage()
+        elif index == 2:
+            pass    
+            #self.updateAttendancePage()
+           # self.init_attend_stackpage()
+        elif index == 3:    
+            self.salsummarymodel.initDepartments()
+            self.loanadjustmentmodel.loadempids()
+            #self.init_salsummary_stackpage()
+        elif index == 4:    
+            self.salarymodel.setDepartment(self.salarymodel.department)
+        elif index == 5:    
+            pass
+            #self.init_transaction_stackpage()
+        elif index == 6:   
+            pass 
+            #self.init_payroll_stackpage()
+        elif index == 7: 
+            pass   
+            #self.init_staffsalary_stackpage()
 
 
         self.ui.stack.setCurrentIndex(index)

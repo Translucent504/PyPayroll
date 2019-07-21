@@ -86,9 +86,7 @@ class attendanceDelegate(QtWidgets.QStyledItemDelegate):
                 editor.line2.setFocus()
                 editor.line2.selectAll()
                 return True
-            elif editor.line2.hasFocus():
-                return False
-        return False
+        return super().eventFilter(editor,event)
 
     def setModelData(self, editor, model, index):
         """

@@ -165,7 +165,7 @@ class Ui_MainWindow(object):
         MainWindow.setTabShape(QtWidgets.QTabWidget.Rounded)
         MainWindow.setDockOptions(QtWidgets.QMainWindow.AllowTabbedDocks|QtWidgets.QMainWindow.AnimatedDocks)
         MainWindow.setUnifiedTitleAndToolBarOnMac(False)
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget = QtWidgets.QWidget(MainWindow) 
         self.centralwidget.setObjectName("centralwidget")
         self.stack = QtWidgets.QStackedWidget(self.centralwidget)
         self.stack.setGeometry(QtCore.QRect(180, 50, 1671, 891))
@@ -1556,7 +1556,8 @@ class Ui_MainWindow(object):
         self.halfoption.setObjectName("halfoption")
         self.horizontalLayout_3.addWidget(self.halfoption)
         self.gridLayout.addLayout(self.horizontalLayout_3, 0, 0, 1, 1)
-        self.atntable = QtWidgets.QTableView(self.frame)
+        from views import attendanceTableView
+        self.atntable = attendanceTableView(self.frame)
         palette = QtGui.QPalette()
         brush = QtGui.QBrush(QtGui.QColor(219, 238, 239))
         brush.setStyle(QtCore.Qt.SolidPattern)
