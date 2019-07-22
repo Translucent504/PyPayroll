@@ -4,11 +4,15 @@ from PySide2 import QtCore, QtGui, QtWidgets, QtSql , QtPrintSupport
 import sys
 import sqlite3
 import mainPayrollWindow
-from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, newTransactionModel, staffSalaryModel, loanAdjustmentModel, MyFilterModel, newLoanAdjustmentModel
+from models import (employeeModel,attendanceModel,departmentModel,
+                    salaryModel, salarySummaryModel, newTransactionModel, 
+                    staffSalaryModel, loanAdjustmentModel, MyFilterModel, 
+                    newLoanAdjustmentModel, productionModel)
 from addEmployeedlg import addEmployee
 from updateEmployeedlg import updateEmployee
 from transactiondlg import newTransactionDialog, dispTransactionDialog
-from printing import makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf, makeSalarySummaryPdf, makeStaffOvertimePdf
+from printing import (makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf,
+                    makeSalarySummaryPdf, makeStaffOvertimePdf)
 from myobjects import Employee, Department
 from delegates import attendanceDelegate
 from views import attendanceTableView
@@ -18,6 +22,8 @@ MONTHS = ['January','February','March','April','May','June','July','August','Sep
 # TODO "INPUT VALIDATION, MODERN INPUT FORMS, DELEGATE SETUP "
 """
 NOTES: I HAVE INTRODUCED THE CUSTOM TABLEVIEW INTO THE MAINPAYROLLWINDOW.PY FILE WHICH WILL GET OVERWRITTEN WHENEVER A CHANGE TO UI IS MADE...
+from views import attendanceTableView
+self.atntable = attendanceTableView(self.frame)
 """
 import sys
 
@@ -41,6 +47,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.empmodel = employeeModel()
         self.atnmodel = attendanceModel('01','Finish',2019,0)
         self.atndelegate = attendanceDelegate()
+        self.proddelagate = QtWidgets.QStyledItemDelegate()
         self.deptmodel = departmentModel()
         self.salarymodel = salaryModel()
         self.transactionmodel = newTransactionModel(23)
@@ -199,10 +206,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.monthoption.currentIndexChanged.connect(self.ui.atntable.resizeColumnsToContents)
         self.ui.halfoption.currentIndexChanged.connect(self.ui.atntable.resizeColumnsToContents)
         self.ui.depoption.currentTextChanged.connect(self.ui.atntable.resizeColumnsToContents)
+        self.ui.depoption.currentTextChanged.connect(self.setAttendanceDelegate)
         self.ui.atntable.setItemDelegate(self.atndelegate)
         self.atndelegate.closeEditor.connect(self.ui.atntable.setFocus)
         self.ui.atntable.setModel(self.atnmodel)
-        
+        self.ui.atntable.resizeColumnsToContents()
+        self.ui.atntable.resizeRowsToContents()
+
+    @QtCore.Slot(str)    
+    def setAttendanceDelegate(self, department):
+        if department == "Production":
+            self.ui.atntable.setItemDelegate(self.proddelagate)
+        else:
+            self.ui.atntable.setItemDelegate(self.atndelegate)
+
     def updateAttendancePage(self):
         with sqlite3.connect('test2.db') as conn:
             self.departments = conn.execute('SELECT department FROM departments').fetchall()
@@ -233,6 +250,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.salarymodel.norecord.connect(self.showNoRecordError)
         self.salarymodel.initEmployees()
         self.salarymodel.initEmployeePay()
+        # self.departmentSalaryProxy = QtCore.QSortFilterProxyModel(self)
+        # self.departmentSalaryProxy.setSourceModel(self.salarymodel)
+        # filterString = QtCore.QRegExp("^[1-9]\d*$")
+        # self.departmentSalaryProxy.setFilterRegExp(filterString)
+        # self.departmentSalaryProxy.setFilterKeyColumn(6)
         self.ui.saldeptable.setModel(self.salarymodel)
         self.ui.saldeptable.resizeColumnsToContents()
         self.ui.saldeptable.resizeRowsToContents()
@@ -448,7 +470,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.payrollHalf.addItems(["1 - 15","15 - end of month"])
         prod = Department("Production")
         self.productionemployees = prod.employees
-        QtCore.QObject.connect(self.ui.payrollSummaryRadio, QtCore.SIGNAL("toggled(bool)"), self.ui.payrollMonth.setEnabled)
         self.ui.payrollProduction.clear()
         self.ui.payrollProduction.addItems([emp.name for emp in self.productionemployees])
         self.ui.genPayroll.clicked.connect(self.setupPrinting)
@@ -469,7 +490,9 @@ class MainWindow(QtWidgets.QMainWindow):
            # self.init_attend_stackpage()
         elif index == 3:    
             self.salsummarymodel.initDepartments()
-            self.loanadjustmentmodel.loadempids()
+            self.loanadjustmentmodel = newLoanAdjustmentModel() #dirty fix
+            self.ui.loanAdjustmentsTable.setModel(self.loanadjustmentmodel)
+            #self.loanadjustmentmodel.loadempids()
             #self.init_salsummary_stackpage()
         elif index == 4:    
             self.salarymodel.setDepartment(self.salarymodel.department)

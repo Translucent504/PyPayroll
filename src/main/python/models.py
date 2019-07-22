@@ -199,6 +199,8 @@ class salaryModel(QtCore.QAbstractTableModel):
     def columnCount(self, parent=QtCore.QModelIndex()):
         if parent.isValid():
             return 0
+        if self.department == "Production":
+            return 7
         return 9
 
     def data(self, index, role):
@@ -247,7 +249,7 @@ class salaryModel(QtCore.QAbstractTableModel):
 
             elif employee.department == "Production":
                 if col == 0:
-                    return "WTF"+employee.name
+                    return employee.name
                 elif col == 1:
                     return employee.meters
                 elif col == 2:
@@ -288,7 +290,7 @@ class salaryModel(QtCore.QAbstractTableModel):
                 elif section == 4:
                     return "Total"
                 elif section == 5:
-                    return "Advance"
+                    return "Loans"
                 elif section == 6:
                     return "Balance"
             else:
@@ -669,8 +671,8 @@ class attendanceModel(QtCore.QAbstractTableModel):
         """
         if role == QtCore.Qt.EditRole:
             row, col = index.row(), index.column()
-            if col in range(self.columnCount() -5,self.columnCount()):
-                return False
+            """ if col in range(self.columnCount() -5,self.columnCount()):
+                return False """
             date = self.getdate(index)
             _id = self.employees[row].id
             if self.department == "Production":
@@ -678,8 +680,9 @@ class attendanceModel(QtCore.QAbstractTableModel):
                     # Meters
                     with sqlite3.connect("test2.db") as conn:
                         cur = conn.cursor()
-                        asd = cur.execute('UPDATE production SET meters=:meters WHERE empid =:id AND month=:month AND half=:half ',{'meters':value,'id':_id, 'month':self.month,'half':self.half})          
-                        _ = cur.execute('INSERT OR IGNORE INTO production(empid,month,half,meters) values (:id,:month,:half,:meters)',{'meters':value,'id':_id, 'month':self.month,'half':self.half})    
+                        query = f'UPDATE production SET meters={value} WHERE empid ={_id} AND month="{self.month}" AND half={self.half}' # prone to injection xd
+                        asd = cur.execute(query)          
+                        _ = cur.execute('INSERT OR IGNORE INTO production(empid,month,half,meters) values (:id,:month,:half,:meters)', {'meters':value,'id':_id, 'month':self.month,'half':self.half})    
                 elif col == 3:
                     # Redyeing
                     with sqlite3.connect("test2.db") as conn:
@@ -1067,9 +1070,30 @@ class MyFilterModel(QtCore.QSortFilterProxyModel):
 class productionModel(QtCore.QAbstractTableModel):
     """This is for the attendance table to display if department is set to
     production
+    ::::: pointless? since we just fixed the delegate..
     """
     def __init__(self):
         super().__init__()
+        self.loadProductionData()
+        self.month = "01"
+        self.setHalf(0)
+
+    def loadProductionData(self):
+        self.production = myobjects.Department("Production").employees
+
+    @QtCore.Slot(int)
+    def setHalf(self, half):
+        self.half = half
+        for emp in self.production:
+            emp.setAttendanceHalf(self.month, self.half)
+
+    @QtCore.Slot(int)
+    def setMonth(self, month):
+        month = f"{month:02}"
+        self.month = month
+        for emp in self.production:
+            emp.setAttendanceHalf(self.month, self.half)
+
 
     def rowCount(self,parent=QtCore.QModelIndex()):
         if parent.isValid():
@@ -1084,7 +1108,12 @@ class productionModel(QtCore.QAbstractTableModel):
     def data(self, index, role):
         row, col = index.row(), index.column()
         if role == QtCore.Qt.DisplayRole:
-            pass
+            if col == 0:
+                return self.production[row].name
+            elif col == 1:
+                return self.production[row].meters
+            elif col == 2:
+                return self.production[row].redyeing
 
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
@@ -1096,9 +1125,24 @@ class productionModel(QtCore.QAbstractTableModel):
                 return "Redyeing"
 
     def setData(self, index, value, role):
+        row, col = index.row(), index.column()
         if role == QtCore.Qt.EditRole:
-            row, col = index.row(), index.column()
-            pass
+            _id = self.production[row].id
+            if col == 2:
+                # Meters
+                with sqlite3.connect("test2.db") as conn:
+                    cur = conn.cursor()
+                    asd = cur.execute('UPDATE production SET meters=:meters WHERE empid =:id AND month=:month AND half=:half ',{'meters':value,'id':_id, 'month':self.month,'half':self.half})          
+                    _ = cur.execute('INSERT OR IGNORE INTO production(empid,month,half,meters) values (:id,:month,:half,:meters)',{'meters':value,'id':_id, 'month':self.month,'half':self.half})    
+            elif col == 3:
+                 # Redyeing
+                with sqlite3.connect("test2.db") as conn:
+                    cur = conn.cursor()
+                    asd = cur.execute('UPDATE production SET redyeing=:redyeing WHERE empid =:id AND month=:month AND half=:half ',{'redyeing':value,'id':_id, 'month':self.month,'half':self.half})          
+                    _ = cur.execute('INSERT OR IGNORE INTO production(empid,month,half,redyeing) values (:id,:month,:half,:redyeing)',{'redyeing':value,'id':_id, 'month':self.month,'half':self.half})   
+                self.production[row].setAttendanceHalf(self.month, self.half)
+                self.dataChanged.emit(index,index)
+            
             return True
         return False
 

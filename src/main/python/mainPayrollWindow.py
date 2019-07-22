@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file 'mainPayrollWindow.ui',
 # licensing of 'mainPayrollWindow.ui' applies.
 #
-# Created: Sun Jul 14 06:46:57 2019
+# Created: Mon Jul 22 09:03:50 2019
 #      by: pyside2-uic  running on PySide2 5.12.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -165,7 +165,7 @@ class Ui_MainWindow(object):
         MainWindow.setTabShape(QtWidgets.QTabWidget.Rounded)
         MainWindow.setDockOptions(QtWidgets.QMainWindow.AllowTabbedDocks|QtWidgets.QMainWindow.AnimatedDocks)
         MainWindow.setUnifiedTitleAndToolBarOnMac(False)
-        self.centralwidget = QtWidgets.QWidget(MainWindow) 
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.stack = QtWidgets.QStackedWidget(self.centralwidget)
         self.stack.setGeometry(QtCore.QRect(180, 50, 1671, 891))

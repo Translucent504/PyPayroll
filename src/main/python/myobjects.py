@@ -16,7 +16,7 @@ class Employee(object):
 
     def initInfo(self):
         self.overtimehours,self.daysabsent,self.dayspresent,self.meters,self.redyeing,self.loans = 0,0,0,0,0,0
-        self.overtimepay, self.totalpay ,self.meters, self.redyeing,self.normalpay = 0,0,0,0,0
+        self.overtimepay, self.totalpay ,self.meters, self.redyeing,self.normalpay,self.advance = 0,0,0,0,0,0
         with sqlite3.connect('test2.db') as conn:
             empdata = conn.execute("""select "empname", department, designation, salary, "salaryint","""
                                     """ "overtimerate" from employees where empid = :id""",{'id':self.id})
@@ -41,6 +41,8 @@ class Employee(object):
     def setAttendanceHalf(self, month, half=0, year=2019):
         """
         This function aids the calculation of the salaries of employees whose salary is calculated on a daily basis.
+        month:int(2 digit representation of month 01-12)
+        half:int (0 or 1)
         """
         with sqlite3.connect('test2.db') as conn:
             if self.department == "Production":
