@@ -4,19 +4,33 @@ from PySide2 import QtCore, QtGui, QtWidgets, QtSql , QtPrintSupport
 import sys
 import sqlite3
 import mainPayrollWindow
-from models import employeeModel,attendanceModel,departmentModel,salaryModel,salarySummaryModel, newTransactionModel, staffSalaryModel, loanAdjustmentModel
+from models import (employeeModel,attendanceModel,departmentModel,
+                    salaryModel, salarySummaryModel, newTransactionModel, 
+                    staffSalaryModel, loanAdjustmentModel, MyFilterModel, 
+                    newLoanAdjustmentModel, productionModel)
 from addEmployeedlg import addEmployee
 from updateEmployeedlg import updateEmployee
-from transactiondlg import transactionDialog
-from printing import makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf, makeSalarySummaryPdf
+from transactiondlg import newTransactionDialog, dispTransactionDialog
+from printing import (makeDepartmentPdf, makeStaffSalaryPdf, makeProductionPdf,
+                    makeSalarySummaryPdf, makeStaffOvertimePdf)
 from myobjects import Employee, Department
 from delegates import attendanceDelegate
+from views import attendanceTableView
+from datetime import datetime
+import pprint
 MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 # TODO "INPUT VALIDATION, MODERN INPUT FORMS, DELEGATE SETUP "
-
+"""
+NOTES: I HAVE INTRODUCED THE CUSTOM TABLEVIEW INTO THE MAINPAYROLLWINDOW.PY FILE WHICH WILL GET OVERWRITTEN WHENEVER A CHANGE TO UI IS MADE...
+from views import attendanceTableView
+self.atntable = attendanceTableView(self.frame)
+"""
 import sys
 
 class MainWindow(QtWidgets.QMainWindow):
+
+    updateRequested = QtCore.Signal()
+
     def __init__(self):
         super().__init__()
         self.ui = mainPayrollWindow.Ui_MainWindow()
@@ -33,12 +47,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.empmodel = employeeModel()
         self.atnmodel = attendanceModel('01','Finish',2019,0)
         self.atndelegate = attendanceDelegate()
+        self.proddelagate = QtWidgets.QStyledItemDelegate()
         self.deptmodel = departmentModel()
         self.salarymodel = salaryModel()
         self.transactionmodel = newTransactionModel(23)
         self.salsummarymodel = salarySummaryModel()
         self.staffsalarymodel = staffSalaryModel()
-        self.loanadjustmentmodel = loanAdjustmentModel()
+        self.loanadjustmentmodel = newLoanAdjustmentModel()
         #self.init_menubar()
         self.init_emp_stackpage() 
         self.init_attend_stackpage()
@@ -92,9 +107,12 @@ class MainWindow(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.information(self, 'Nothing Selected', 'Please select a row to delete.', QtWidgets.QMessageBox.Ok)
 
     def init_dept_stackpage(self):
+        font = QtGui.QFont()
+        font.setPointSize(14)
         self.ui.deptable.setModel(self.deptmodel)
         self.ui.adddeptbtn.clicked.connect(self.showAddDepDialog)
         self.ui.deldepbtn.clicked.connect(self.del_dept)
+        self.ui.deptable.setFont(font)
         self.ui.deptable.resizeColumnsToContents()
         self.ui.deptable.resizeRowsToContents()
 
@@ -113,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         dlg.exec()
         if dlg.data:
             with sqlite3.connect('test2.db') as conn:
-                conn.execute('INSERT INTO employees("emp-name",department,designation,salary,"salary-int","overtime-rate","working") VALUES(:name,:depart,:designation,:salary,:salarystruct,:overtime,:working)',dlg.data)
+                conn.execute('INSERT INTO employees("empname",department,designation,salary,"salaryint","overtimerate","working") VALUES(:name,:depart,:designation,:salary,:salarystruct,:overtime,:working)',dlg.data)
         self.empmodel.select()
 
     def showUpdateEmpDialog(self):
@@ -126,21 +144,16 @@ class MainWindow(QtWidgets.QMainWindow):
         model = self.empmodel
         mapper = QtWidgets.QDataWidgetMapper(dlg)
         mapper.setModel(model)
-        mapper.addMapping(dlg.name, model.fieldIndex("emp-name"))
+        mapper.addMapping(dlg.name, model.fieldIndex("empname"))
         mapper.addMapping(dlg.depart, model.fieldIndex("department"))
         mapper.addMapping(dlg.designation, model.fieldIndex("designation"))
         mapper.addMapping(dlg.salary, model.fieldIndex("salary"))
-        mapper.addMapping(dlg.overtime, model.fieldIndex("overtime-rate"))
+        mapper.addMapping(dlg.overtime, model.fieldIndex("overtimerate"))
         mapper.addMapping(dlg.working, model.fieldIndex("working"))
-        mapper.addMapping(dlg.salarystruct, model.fieldIndex("salary-int"))
+        mapper.addMapping(dlg.salarystruct, model.fieldIndex("salaryint"))
         mapper.setCurrentIndex(self.ui.empTable.currentIndex().row())
         dlg.show()
         
-
-        
-        
-        
-
     def UpdateAllModels(self):
         print("Updating all models but not setting tables to them...")
         self.atnmodel = attendanceModel('01','Finish',2019,0)
@@ -159,15 +172,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.empTable.resizeRowsToContents()
 
     def init_emp_stackpage(self):
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.ui.empTable.setFont(font)
         self.ui.empTable.setModel(self.empmodel)
         header = self.ui.empTable.horizontalHeader() # ???
-        #header.setStretchLastSection(True)
-        #self.ui.empdepoption.clearItems()
+        self.ui.empdepoption.clear()
         self.ui.empdepoption.addItem('All')
         self.ui.empdepoption.addItems(self.departments)
         self.ui.empdepoption.currentTextChanged.connect(self.filterEmpTable)
-        #self.ui.empTable.resizeColumnsToContents()
-        #self.ui.empTable.resizeRowsToContents()
+        self.ui.empTable.resizeColumnsToContents()
+        self.ui.empTable.resizeRowsToContents()
         self.ui.empTable.doubleClicked.connect(self.showUpdateEmpDialog)
         self.ui.addempbtn.clicked.connect(self.showAddEmpDialog)
         self.ui.delempbtn.clicked.connect(self.del_emp)
@@ -176,6 +191,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def init_attend_stackpage(self):
         # font size 12 is good
+        font = QtGui.QFont()
+        font.setPointSize(12)
+        self.ui.atntable.setFont(font)
+        self.ui.monthoption.clear()
+        self.ui.halfoption.clear()               
+        self.ui.depoption.clear()
         self.ui.monthoption.addItems(MONTHS)
         self.ui.halfoption.addItems(['First Half (1 - 15)','Second Half (16 - End of month)'])               
         self.ui.depoption.addItems(self.departments) 
@@ -185,11 +206,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.monthoption.currentIndexChanged.connect(self.ui.atntable.resizeColumnsToContents)
         self.ui.halfoption.currentIndexChanged.connect(self.ui.atntable.resizeColumnsToContents)
         self.ui.depoption.currentTextChanged.connect(self.ui.atntable.resizeColumnsToContents)
+        self.ui.depoption.currentTextChanged.connect(self.setAttendanceDelegate)
         self.ui.atntable.setItemDelegate(self.atndelegate)
+        self.atndelegate.closeEditor.connect(self.ui.atntable.setFocus)
         self.ui.atntable.setModel(self.atnmodel)
-        #self.ui.atntable.resizeColumnsToContents()
-        #self.ui.atntable.resizeRowsToContents()
-        #self.ui.atntable.horizontalHeader().setStretchLastSection(True)
+        self.ui.atntable.resizeColumnsToContents()
+        self.ui.atntable.resizeRowsToContents()
+
+    @QtCore.Slot(str)    
+    def setAttendanceDelegate(self, department):
+        if department == "Production":
+            self.ui.atntable.setItemDelegate(self.proddelagate)
+        else:
+            self.ui.atntable.setItemDelegate(self.atndelegate)
 
     def updateAttendancePage(self):
         with sqlite3.connect('test2.db') as conn:
@@ -203,11 +232,17 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.warning(self.ui.saldeptable,"ERROR",f"No attendance record found for \n\n{norecordlist}")
 
     def init_departsalary_stackpage(self):
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.ui.saldeptable.setFont(font)
+        self.ui.monthoption_2.clear()
+        self.ui.halfoption_2.clear()
         self.ui.monthoption_2.addItems(['January','February','March','April','May','June','July','August','September','October','November','December'])
         self.ui.halfoption_2.addItems(['First Half (1 - 15)','Second Half (16 - End of month)'])
         with sqlite3.connect('test2.db') as conn:
             departments = conn.execute('SELECT department FROM departments').fetchall()
         departments = [x[0] for x in departments]
+        self.ui.depoption_2.clear()
         self.ui.depoption_2.addItems(self.departments) 
         self.ui.monthoption_2.currentIndexChanged.connect(self.salarymodel.setMonth)
         self.ui.halfoption_2.currentIndexChanged.connect(self.salarymodel.setHalf)
@@ -215,46 +250,113 @@ class MainWindow(QtWidgets.QMainWindow):
         self.salarymodel.norecord.connect(self.showNoRecordError)
         self.salarymodel.initEmployees()
         self.salarymodel.initEmployeePay()
-        self.ui.loanAdjustmentsTable.setModel(self.loanadjustmentmodel)
+        # self.departmentSalaryProxy = QtCore.QSortFilterProxyModel(self)
+        # self.departmentSalaryProxy.setSourceModel(self.salarymodel)
+        # filterString = QtCore.QRegExp("^[1-9]\d*$")
+        # self.departmentSalaryProxy.setFilterRegExp(filterString)
+        # self.departmentSalaryProxy.setFilterKeyColumn(6)
         self.ui.saldeptable.setModel(self.salarymodel)
         self.ui.saldeptable.resizeColumnsToContents()
         self.ui.saldeptable.resizeRowsToContents()
 
     def init_salsummary_stackpage(self):
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.ui.salsumarytable.setFont(font)
+        self.ui.salmonthoption.clear()
+        self.ui.salhalfoption.clear()
         self.ui.salmonthoption.addItems(['January','February','March','April','May','June','July','August','September','October','November','December'])
         self.ui.salhalfoption.addItems(['First Half (1 - 15)','Second Half (16 - End of month)'])
         self.ui.salmonthoption.currentIndexChanged.connect(self.salsummarymodel.setMonth)
         self.ui.salhalfoption.currentIndexChanged.connect(self.salsummarymodel.setHalf)
         self.ui.salsumarytable.setModel(self.salsummarymodel)
+        self.ui.loanAdjustmentsTable.setModel(self.loanadjustmentmodel)
+        self.loanadjustmentmodel.dataChanged.connect(lambda : self.salsummarymodel.setHalf(self.ui.salhalfoption.currentIndex()))
+        self.ui.loanAdjustmentsTable.resizeColumnsToContents()
         self.ui.salsumarytable.resizeColumnsToContents()
         self.ui.salsumarytable.resizeRowsToContents()
     
     def showNewTransDlg(self):
-        pass
-        """ 
-        @QtCore.Slot(object)
+        """
+        transactionsnew table fields:  id empid date credit debit description
+        """
+         
+        """  @QtCore.Slot(object)
         def updateDB(data):
-            with sqlite3.connect('test2.db') as conn:
-                _ = conn.execute('insert into transactions (empid, date, amount) values (:empid, :date, :amount)', data)
-            self.transactionmodel.setTransactions()
-
-        dlg = transactionDialog()
-        dlg.dataready.connect(updateDB)
-        dlg.exec_() """
         
+            self.transactionmodel.setEmployee(data['empid'])
+            #self.transactionmodel.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.transactionmodel.columnCount()-1) """
+
+        dlg = newTransactionDialog()
+        dlg.dataready.connect(self.transactionmodel.appendTransaction)
+        dlg.exec_() 
+        
+    def showDispTransDlg(self):
+        """
+        Sets filters in proxymodel
+        """
+        
+        @QtCore.Slot(object)
+        def setTransaction(data):
+            self.transactionmodel.setEmployee(data['empid'])
+            #self.transproxy.setSourceModel(self.transactionmodel)
+            self.transproxy.setFilterDate(data['fromdate'], data['todate'])
+        dlg = dispTransactionDialog()
+        dlg.dataready.connect(setTransaction)
+        dlg.exec()
+    
+    @QtCore.Slot()
+    def deleteTransaction(self):
+        row = self.ui.tableView.currentIndex().row()
+        if row > -1:
+            reply = QtWidgets.QMessageBox.question(self, 'Confirm delete','Delete selected row?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+            if reply == QtWidgets.QMessageBox.Yes:
+                self.transactionmodel.deletetransaction(self.ui.tableView.currentIndex())
+                
+        else:
+            QtWidgets.QMessageBox.information(self, 'Nothing Selected', 'Please select a row to delete.', QtWidgets.QMessageBox.Ok)
+
     def init_transaction_stackpage(self):
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.transproxy = MyFilterModel()
+        self.transproxy.setSourceModel(self.transactionmodel)
+
+        self.ui.tableView.setFont(font)
         self.ui.newtrans.clicked.connect(self.showNewTransDlg)
-        self.ui.tableView.setModel(self.transactionmodel)
+        self.ui.deltrans.clicked.connect(self.deleteTransaction)
+        self.ui.disptrans.clicked.connect(self.showDispTransDlg)
+        self.ui.tableView.setModel(self.transproxy)
         self.ui.tableView.resizeColumnsToContents()
         self.ui.tableView.resizeRowsToContents()
         #self.ui.deltrans.clicked.connect(lambda : self.transactionmodel.deletetransaction(self.ui.tableView.currentIndex()))
     
     def init_staffsalary_stackpage(self):
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.ui.salsumarytable_2.setFont(font)
         self.ui.salmonthoption_2.currentIndexChanged.connect(self.staffsalarymodel.setMonth)
+        self.ui.salmonthoption_2.clear()
         self.ui.salmonthoption_2.addItems(MONTHS)
         self.ui.salsumarytable_2.setModel(self.staffsalarymodel)
         self.ui.salsumarytable_2.resizeColumnsToContents()
         self.ui.salsumarytable_2.resizeRowsToContents()
+
+    def askToUpdateTransactions(self):
+        """Automatically makes entry into the 
+        transactionsnew table of all employees that exist in the
+        loan adjustments table.
+        """
+
+        UpdateTransactions = QtWidgets.QMessageBox.question(self, 'Update Transactions','Update Transactions?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if UpdateTransactions == QtWidgets.QMessageBox.Yes:
+            with sqlite3.connect('test2.db') as conn:
+                query = "select * from loanadjustments" #this returns (empid , credit)
+                emps = conn.execute(query).fetchall()
+                date = datetime.strftime(datetime.now(), "%Y-%m-%d")
+                list_of_transactions = [(empid, date, credit, 0, 'LoanAdj') for empid, credit in emps]               
+                conn.executemany("insert into transactionsnew (empid, date, credit, debit, description) values (?,?,?,?,?)", list_of_transactions)  # this needs (empid, date, credit, debit, description)
+            self.transactionmodel.getAllTransactions() # Updates / refreshes the tableview
 
     def setupPrinting(self):
         if self.ui.payrollSummaryRadio.isChecked():
@@ -262,11 +364,16 @@ class MainWindow(QtWidgets.QMainWindow):
             month = self.ui.payrollMonth.currentIndex()
             half = self.ui.payrollHalf.currentIndex()
             data = self.salsummarymodel.getPrintData(month,half)
-            foot = data.pop()
-            overtimedata = self.staffsalarymodel.getOvertimeData(month+1, half)
-            tmp = ['Staff overtime',str(overtimedata[-1]),'', str(overtimedata[-1])]
-            data.append(tmp)
-            data.append(foot)
+            printdata = [['Loan Adjustments','','','']]
+            rows, cols = self.loanadjustmentmodel.rowCount(), self.loanadjustmentmodel.columnCount()
+            for row in range(0, rows, 2): 
+                tmp = []
+                tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row,0),QtCore.Qt.DisplayRole))
+                tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row,1),QtCore.Qt.DisplayRole))
+                tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row+1,0),QtCore.Qt.DisplayRole)) 
+                tmp.append(self.loanadjustmentmodel.data(self.loanadjustmentmodel.index(row+1,1),QtCore.Qt.DisplayRole))    
+                printdata.append(tmp)
+            data.extend(printdata)
             makeSalarySummaryPdf(data, MONTHS[month], half)
         
 
@@ -294,8 +401,20 @@ class MainWindow(QtWidgets.QMainWindow):
             #makegrid(data, department, MONTHS[month], half)
             makeDepartmentPdf(departmentdata1, departmentdata2)
 
-        #elif STAFF OVERTIME:
-            #self.ui.staffsummarymodel.getOvertimeData() .... already implemented just need to add button to ui
+        elif self.ui.payrollStaffOvertimeRadio.isChecked():
+            half = self.ui.payrollHalf.currentIndex()
+            month = self.ui.payrollMonth.currentIndex()
+            data = self.staffsalarymodel.getOvertimeData(month+1, half)
+            tabledata = []
+            for row in range(len(data[0])-1):
+                tmp = []
+                tmp.append(data[row]['name'])
+                tmp.append(data[row]['overtimerate'])
+                tmp.append(data[row]['overtimehours'])
+                tmp.append(data[row]['overtimepay'])
+                tabledata.append(tmp)
+            tabledata.append(['','','',data[-1]])
+            makeStaffOvertimePdf(tabledata, MONTHS[month], half)
 
         elif self.ui.payrollProdRadio.isChecked():
             # get production data and send for printing
@@ -319,7 +438,7 @@ class MainWindow(QtWidgets.QMainWindow):
             #self.staffsalarymodel=staffSalaryModel()
             month = self.ui.payrollMonth.currentIndex()
             half = 2
-            data = self.staffsalarymodel.getPrintData(month)
+            data = self.staffsalarymodel.getPrintData(month) # dont need to add +1 coz its using the models own setMonth which adds 1 anyway
             staffdata = {}
             staffdata['table'] = data
             staffdata['month'] = MONTHS[month]
@@ -327,41 +446,65 @@ class MainWindow(QtWidgets.QMainWindow):
             staffdata['department'] = "Staff Salary"
             makeStaffSalaryPdf(staffdata)
 
-        reply = QtWidgets.QMessageBox.question(self, 'View Payroll','Open payroll PDF for printing?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
-        if reply == QtWidgets.QMessageBox.Yes:
+        ShowPdf= QtWidgets.QMessageBox.question(self, 'View Payroll','Open payroll PDF for printing?', QtWidgets.QMessageBox.Yes, QtWidgets.QMessageBox.No)
+        if ShowPdf == QtWidgets.QMessageBox.Yes:
             #open doc in adobe pdf
             QtGui.QDesktopServices.openUrl("grid.pdf")
-            
+        
+        self.askToUpdateTransactions()
+        
+          
 
     def init_payroll_stackpage(self):
+        self.ui.payrollDepartment.clear()
+        self.ui.payrollDepartment_3.clear()
         self.ui.payrollDepartment.addItems(self.departments)
         self.ui.payrollDepartment_3.addItems(self.departments)
+        self.ui.payrollMonth.clear()
         self.ui.payrollMonth.addItems(MONTHS)
+        self.ui.payrollMonth_3.clear()
         self.ui.payrollMonth_3.addItems(MONTHS)
+        self.ui.payrollHalf_3.clear()
         self.ui.payrollHalf_3.addItems(["1 - 15","15 - end of month"])
+        self.ui.payrollHalf.clear()
         self.ui.payrollHalf.addItems(["1 - 15","15 - end of month"])
         prod = Department("Production")
         self.productionemployees = prod.employees
-        QtCore.QObject.connect(self.ui.payrollSummaryRadio, QtCore.SIGNAL("toggled(bool)"), self.ui.payrollMonth.setEnabled)
+        self.ui.payrollProduction.clear()
         self.ui.payrollProduction.addItems([emp.name for emp in self.productionemployees])
         self.ui.genPayroll.clicked.connect(self.setupPrinting)
         
 
     def switchstackto(self, index):
         if index == 0:
-            self.ui.empTable.setModel(self.empmodel)
+            pass
+            #self.ui.empTable.setModel(self.empmodel)
+            #self.init_emp_stackpage() 
         elif index == 1:
-            self.ui.deptable.setModel(self.deptmodel)
-        elif index == 2:    
-            self.updateAttendancePage()
-        """ elif index == 3:
-            self.ui.saldeptable.setModel(self.salarymodel)
-        elif index == 4:
-            self.ui.salsumarytable.setModel(self.salsummarymodel)
-        elif index == 5:
-            self.ui.tableView.setModel(self.transactionmodel)
-        elif index == 7:
-            self.ui.salsumarytable_2.setModel(self.staffsalarymodel) """
+            pass
+            #self.ui.deptable.setModel(self.deptmodel)
+            #self.init_dept_stackpage()
+        elif index == 2:
+            pass    
+            #self.updateAttendancePage()
+           # self.init_attend_stackpage()
+        elif index == 3:    
+            self.salsummarymodel.initDepartments()
+            self.loanadjustmentmodel = newLoanAdjustmentModel() #dirty fix
+            self.ui.loanAdjustmentsTable.setModel(self.loanadjustmentmodel)
+            #self.loanadjustmentmodel.loadempids()
+            #self.init_salsummary_stackpage()
+        elif index == 4:    
+            self.salarymodel.setDepartment(self.salarymodel.department)
+        elif index == 5:    
+            pass
+            #self.init_transaction_stackpage()
+        elif index == 6:   
+            pass 
+            #self.init_payroll_stackpage()
+        elif index == 7: 
+            pass   
+            #self.init_staffsalary_stackpage()
 
 
         self.ui.stack.setCurrentIndex(index)

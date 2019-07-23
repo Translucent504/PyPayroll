@@ -548,7 +548,7 @@
      <enum>QFrame::Sunken</enum>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>6</number>
     </property>
     <widget class="QWidget" name="employees">
      <layout class="QVBoxLayout" name="verticalLayout">
@@ -5936,6 +5936,21 @@
            </widget>
           </item>
           <item>
+           <widget class="QRadioButton" name="payrollStaffOvertimeRadio">
+            <property name="font">
+             <font>
+              <family>Segoe UI Light</family>
+              <pointsize>20</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>Staff Overtime</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QRadioButton" name="payrollProdRadio">
             <property name="font">
              <font>
@@ -8712,12 +8727,12 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>397</x>
-     <y>178</y>
+     <x>409</x>
+     <y>149</y>
     </hint>
     <hint type="destinationlabel">
-     <x>388</x>
-     <y>475</y>
+     <x>408</x>
+     <y>920</y>
     </hint>
    </hints>
   </connection>
@@ -8728,12 +8743,12 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>302</x>
-     <y>270</y>
+     <x>314</x>
+     <y>238</y>
     </hint>
     <hint type="destinationlabel">
-     <x>398</x>
-     <y>440</y>
+     <x>418</x>
+     <y>776</y>
     </hint>
    </hints>
   </connection>
@@ -8744,12 +8759,12 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>501</x>
-     <y>270</y>
+     <x>513</x>
+     <y>238</y>
     </hint>
     <hint type="destinationlabel">
-     <x>439</x>
-     <y>475</y>
+     <x>459</x>
+     <y>920</y>
     </hint>
    </hints>
   </connection>
@@ -8764,8 +8779,8 @@
      <y>316</y>
     </hint>
     <hint type="destinationlabel">
-     <x>391</x>
-     <y>370</y>
+     <x>411</x>
+     <y>488</y>
     </hint>
    </hints>
   </connection>
@@ -8776,12 +8791,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>446</x>
-     <y>224</y>
+     <x>458</x>
+     <y>191</y>
     </hint>
     <hint type="destinationlabel">
-     <x>383</x>
-     <y>583</y>
+     <x>1498</x>
+     <y>874</y>
     </hint>
    </hints>
   </connection>
@@ -8792,12 +8807,12 @@
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>540</x>
-     <y>178</y>
+     <x>552</x>
+     <y>149</y>
     </hint>
     <hint type="destinationlabel">
-     <x>541</x>
-     <y>224</y>
+     <x>553</x>
+     <y>191</y>
     </hint>
    </hints>
   </connection>
@@ -8808,12 +8823,12 @@
    <slot>setChecked(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>436</x>
-     <y>178</y>
+     <x>448</x>
+     <y>149</y>
     </hint>
     <hint type="destinationlabel">
-     <x>436</x>
-     <y>224</y>
+     <x>448</x>
+     <y>191</y>
     </hint>
    </hints>
   </connection>
@@ -8824,12 +8839,12 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>330</x>
-     <y>132</y>
+     <x>342</x>
+     <y>102</y>
     </hint>
     <hint type="destinationlabel">
-     <x>439</x>
-     <y>370</y>
+     <x>459</x>
+     <y>488</y>
     </hint>
    </hints>
   </connection>
@@ -8840,12 +8855,60 @@
    <slot>setDisabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>614</x>
-     <y>132</y>
+     <x>626</x>
+     <y>102</y>
     </hint>
     <hint type="destinationlabel">
-     <x>439</x>
-     <y>475</y>
+     <x>459</x>
+     <y>920</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>payrollStaffOvertimeRadio</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>payrollProduction</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>462</x>
+     <y>265</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>462</x>
+     <y>902</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>payrollStaffOvertimeRadio</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>payrollDepartment</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>462</x>
+     <y>265</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>462</x>
+     <y>470</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>payrollStaffRadio</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>payrollDepartment</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>462</x>
+     <y>218</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>462</x>
+     <y>470</y>
     </hint>
    </hints>
   </connection>

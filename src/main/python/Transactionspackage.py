@@ -18,7 +18,7 @@ import pprint
 # Balance calculation query:
 
 
-LUL = """SELECT date,"emp-name",
+LUL = """SELECT date,"empname",
        credit, debit,
        (SELECT sum(debit - credit)
         FROM transactionsnew AS T2
@@ -53,7 +53,7 @@ class newTransactionModel(QtCore.QAbstractTableModel):
 
     def getAllTransactions(self):
         with sqlite3.connect('test2.db') as conn:
-            query = f"""SELECT id,date,"emp-name", credit, debit, (SELECT sum(debit - credit)
+            query = f"""SELECT id,date,"empname", credit, debit, (SELECT sum(debit - credit)
             FROM transactionsnew AS T2
             WHERE T2.date <= transactionsnew.date and T2.empid = {self.employee.id}) AS cumulative_sum
             FROM transactionsnew inner join employees on transactionsnew.empid = employees.empid 
@@ -139,13 +139,9 @@ class newTransactionModel(QtCore.QAbstractTableModel):
         return super().flags(index)
 
 
-def watgetAllTransactions():
-        with sqlite3.connect('test2.db') as conn:
-            query = f'select * from transactionsnew where empid = {23}'
-            result = conn.execute(LUL).fetchall()
-            pprint.pprint(result)
 
-proxy = QtCore.QSortFilterProxyModel()
+
+""" proxy = QtCore.QSortFilterProxyModel()
 
 
 
@@ -155,3 +151,4 @@ view.setModel(newTransactionModel(23))
 view.show()
 exitcode = app.exec_()
 sys.exit(exitcode) 
+ """

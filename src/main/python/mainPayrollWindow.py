@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file 'mainPayrollWindow.ui',
 # licensing of 'mainPayrollWindow.ui' applies.
 #
-# Created: Thu Jul 11 18:20:52 2019
+# Created: Mon Jul 22 09:03:50 2019
 #      by: pyside2-uic  running on PySide2 5.12.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -1556,7 +1556,8 @@ class Ui_MainWindow(object):
         self.halfoption.setObjectName("halfoption")
         self.horizontalLayout_3.addWidget(self.halfoption)
         self.gridLayout.addLayout(self.horizontalLayout_3, 0, 0, 1, 1)
-        self.atntable = QtWidgets.QTableView(self.frame)
+        from views import attendanceTableView
+        self.atntable = attendanceTableView(self.frame)
         palette = QtGui.QPalette()
         brush = QtGui.QBrush(QtGui.QColor(219, 238, 239))
         brush.setStyle(QtCore.Qt.SolidPattern)
@@ -2077,6 +2078,15 @@ class Ui_MainWindow(object):
         self.payrollStaffRadio.setFont(font)
         self.payrollStaffRadio.setObjectName("payrollStaffRadio")
         self.verticalLayout_12.addWidget(self.payrollStaffRadio)
+        self.payrollStaffOvertimeRadio = QtWidgets.QRadioButton(self.Print)
+        font = QtGui.QFont()
+        font.setFamily("Segoe UI Light")
+        font.setPointSize(20)
+        font.setWeight(75)
+        font.setBold(True)
+        self.payrollStaffOvertimeRadio.setFont(font)
+        self.payrollStaffOvertimeRadio.setObjectName("payrollStaffOvertimeRadio")
+        self.verticalLayout_12.addWidget(self.payrollStaffOvertimeRadio)
         self.payrollProdRadio = QtWidgets.QRadioButton(self.Print)
         font = QtGui.QFont()
         font.setFamily("Segoe UI Light")
@@ -3067,7 +3077,7 @@ class Ui_MainWindow(object):
         self.atnmonthlabel_2.setBuddy(self.monthoption)
 
         self.retranslateUi(MainWindow)
-        self.stack.setCurrentIndex(3)
+        self.stack.setCurrentIndex(6)
         QtCore.QObject.connect(self.payrollDeptRadio, QtCore.SIGNAL("toggled(bool)"), self.payrollProduction.setDisabled)
         QtCore.QObject.connect(self.payrollStaffRadio, QtCore.SIGNAL("toggled(bool)"), self.payrollHalf.setDisabled)
         QtCore.QObject.connect(self.payrollStaffRadio, QtCore.SIGNAL("toggled(bool)"), self.payrollProduction.setDisabled)
@@ -3077,6 +3087,9 @@ class Ui_MainWindow(object):
         QtCore.QObject.connect(self.payrollDeptRadio, QtCore.SIGNAL("toggled(bool)"), self.checkBox.setChecked)
         QtCore.QObject.connect(self.payrollSummaryRadio, QtCore.SIGNAL("toggled(bool)"), self.payrollDepartment.setDisabled)
         QtCore.QObject.connect(self.payrollSummaryRadio, QtCore.SIGNAL("toggled(bool)"), self.payrollProduction.setDisabled)
+        QtCore.QObject.connect(self.payrollStaffOvertimeRadio, QtCore.SIGNAL("toggled(bool)"), self.payrollProduction.setDisabled)
+        QtCore.QObject.connect(self.payrollStaffOvertimeRadio, QtCore.SIGNAL("toggled(bool)"), self.payrollDepartment.setDisabled)
+        QtCore.QObject.connect(self.payrollStaffRadio, QtCore.SIGNAL("toggled(bool)"), self.payrollDepartment.setDisabled)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -3097,6 +3110,7 @@ class Ui_MainWindow(object):
         self.payrollDeptRadio.setText(QtWidgets.QApplication.translate("MainWindow", "Department Payroll", None, -1))
         self.checkBox.setText(QtWidgets.QApplication.translate("MainWindow", "Print 2 Departments", None, -1))
         self.payrollStaffRadio.setText(QtWidgets.QApplication.translate("MainWindow", "Staff Salary", None, -1))
+        self.payrollStaffOvertimeRadio.setText(QtWidgets.QApplication.translate("MainWindow", "Staff Overtime", None, -1))
         self.payrollProdRadio.setText(QtWidgets.QApplication.translate("MainWindow", "Production", None, -1))
         self.label_14.setText(QtWidgets.QApplication.translate("MainWindow", "Department", None, -1))
         self.label_15.setText(QtWidgets.QApplication.translate("MainWindow", "Month", None, -1))
