@@ -143,19 +143,26 @@ class salaryModel(QtCore.QAbstractTableModel):
         super().__init__()
         self.month = '01'
         self.half = 0
-        self.department = 'Finish'
+        self.department = 'Dyeing'
+        self.initEmployees()
     
     norecord = QtCore.Signal(str)
+
+    def filterEmployees(self):
+        date = datetime.strptime(f"{self.half*15+1}-{int(self.month):02}-2019", f"%d-%m-%Y")
+        self.employees = [emp for emp in self.employees if emp.isWorking(date)]
 
     @QtCore.Slot(int)
     def setMonth(self, month):
         self.month = f"{month+1:02}"
+        self.filterEmployees()
         self.initEmployeePay()
         self.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.columnCount()-1)
 
     @QtCore.Slot(int)
     def setHalf(self, half):
         self.half = half
+        self.filterEmployees()
         self.initEmployeePay()
         self.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.columnCount()-1)
 
@@ -173,6 +180,7 @@ class salaryModel(QtCore.QAbstractTableModel):
         with sqlite3.connect('test2.db') as conn:
             empids = conn.execute('select empid from employees where department = :dept',{'dept':self.department})
         self.employees = [myobjects.Employee(empid[0]) for empid in empids]
+        self.filterEmployees()
 
     def initEmployeePay(self):
         norecordlist = []
@@ -495,6 +503,8 @@ class attendanceModel(QtCore.QAbstractTableModel):
     """
     def __init__(self, month, department,year=2019, half = 0):
         super().__init__()
+        self.terminated_employees = 0
+        self.employees = []
         self.month = month
         self.year = year
         self.half = half
@@ -503,6 +513,8 @@ class attendanceModel(QtCore.QAbstractTableModel):
         
     editCompleted = QtCore.Signal(str)
     
+    
+
     @QtCore.Slot(int)
     def setMonth(self, newmonth):
         self.month = f"{newmonth+1:02}"
@@ -518,33 +530,42 @@ class attendanceModel(QtCore.QAbstractTableModel):
 
     @QtCore.Slot(int)
     def setYear(self, newyear):
+        """Unused slot"""
         self.year = newyear
+        self.load_data()
         self.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.columnCount()-1)
 
     @QtCore.Slot(int)
     def setHalf(self, newhalf):
         self.half = newhalf
-        for employee in self.employees:
-            employee.setAttendanceHalf(self.month, self.half)
+        self.load_data()
+        """ for employee in self.employees:
+            employee.setAttendanceHalf(self.month, self.half) """
         self.headerDataChanged.emit(QtCore.Qt.Horizontal,0,self.columnCount()-1)
 
     def load_data(self):
         """
-        updates the current cell's data.
-        IMPROVEMENT, DONT CALL THIS ON EVERY CELL UPDATE, instead just call datachanged on one cell.
+        updates the current cell's data(??????)
+        IMPROVEMENT, DONT CALL THIS ON EVERY CELL UPDATE, instead just call datachanged on one cell(???)
+
         """
         with sqlite3.connect('test2.db') as conn:
             employeeids = conn.execute('select empid from employees where department =:dep',{'dep':self.department})
             self.employees = [myobjects.Employee(empid[0]) for empid in employeeids.fetchall()]
+        date = self.getdate(self.index(0,2), 'obj') # earliest date for the current month , half
+        self.employees = [emp for emp in self.employees if emp.isWorking(date)]
+        #print(datetime.strftime(date,"%d-%m-%Y"))
+        #self.employees = filter(lambda emp: emp.isWorking(date), self.employees) # these are emps that are to not be shown at all this returns a generator not a 
+        # list we need a list to update rowcount by using len
         for employee in self.employees:
             employee.setAttendanceDict(self.month, self.year)
             employee.setAttendanceHalf(self.month, self.half)
-            #employee.calculatePay()
 
 
     def rowCount(self,parent=QtCore.QModelIndex()):
         if parent.isValid():
             return 0
+        #print(len(self.employees))
         return len(self.employees)
 
 
@@ -946,8 +967,12 @@ class staffSalaryModel(QtCore.QAbstractTableModel):
     def __init__(self):
         super().__init__()
         self.employees = []
-        self.getEmployees()
         self.setMonth(1)
+        #self.getEmployees()
+
+    def filterEmployees(self):
+        date = datetime.strptime(f"01-{int(self.month):02}-2019", f"%d-%m-%Y")
+        self.employees = [emp for emp in self.employees if emp.isWorking(date)]
 
     def getEmployees(self):
         with sqlite3.connect("test2.db") as conn:
@@ -955,10 +980,12 @@ class staffSalaryModel(QtCore.QAbstractTableModel):
             emps = conn.execute(query).fetchall()
             if emps:
                 self.employees = [myobjects.Employee(empid[0]) for empid in emps]
+                self.filterEmployees()
 
     @QtCore.Slot(int)
     def setMonth(self, month):
         self.month = f"{month+1:02}"
+        self.getEmployees()
         for emp in self.employees:
             emp.setAttendanceFull(self.month)
             emp.calculatePay()
@@ -1153,6 +1180,16 @@ class productionModel(QtCore.QAbstractTableModel):
             return super().flags(index)
 
 
+
+# Helper function for all models to filter() list
+def FilterEmployees(date , employee):
+        """returns the result of calling isWorking method of employee
+        have termination dates before the earliest date being displayed
+        also needs to update rowCount somehow by counting # of terminated emps and then
+        maybe remove that many rows? 
+        **maybe better to just use a lambda function inside filter? or a partial / curried version
+        of this function with date applied?"""
+        return employee.isWorking(date)
 
 
 ################################

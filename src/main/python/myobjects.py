@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 
 class Employee(object):
     """
@@ -15,18 +16,22 @@ class Employee(object):
         self.initInfo()
 
     def initInfo(self):
-        self.overtimehours,self.daysabsent,self.dayspresent,self.meters,self.redyeing,self.loans = 0,0,0,0,0,0
+        self.overtimehours,self.daysabsent,self.dayspresent,self.meters,self.redyeing,self.loans,self.working,self.termination_date = 0,0,0,0,0,0,'Working', datetime.strptime("14-01-2019",f"%d-%m-%Y")
         self.overtimepay, self.totalpay ,self.meters, self.redyeing,self.normalpay,self.advance = 0,0,0,0,0,0
         with sqlite3.connect('test2.db') as conn:
             empdata = conn.execute("""select "empname", department, designation, salary, "salaryint","""
-                                    """ "overtimerate" from employees where empid = :id""",{'id':self.id})
+                                    """ "overtimerate","working" from employees where empid = :id""",{'id':self.id})
             try:
                 self.loans = conn.execute('select amount from loanadjustments where empid = :id', {'id':self.id}).fetchone()[0]
                 if self.loans == None:
                     self.loans = 0
             except:
                 self.loans = 0
-        self.name, self.department, self.designation, self.salary, self.salary_interval, self.overtimerate = empdata.fetchone()  
+        self.name, self.department, self.designation, self.salary, self.salary_interval, self.overtimerate, self.working = empdata.fetchone()  
+        if self.working == "Terminated":
+            with sqlite3.connect("test2.db") as conn:
+                self.termination_date = conn.execute("select date from terminations where empid=:empid",{'empid':self.id}).fetchone([0])                    
+
 
     def setAttendanceDict(self, month, year=2019):
         """
@@ -116,6 +121,14 @@ class Employee(object):
             self.totalpay = self.normalpay
             self.balance = self.totalpay - self.loans
 
+    def isWorking(self, date):
+        """Returns True if date < Termination date for
+        Employees that have been terminated."""
+        if self.working == "Working":
+            return True
+        elif self.working == "Terminated":
+            #print(datetime.strftime(date,"%d-%m-%Y"), datetime.strftime(self.termination_date,"%d-%m-%Y"))
+            return date < self.termination_date   # termination date not yet implemented in database or employee input
 
 class Department(object):
     """
@@ -138,17 +151,21 @@ class Department(object):
     
     def setMonth(self, month):
         self.month = f"{int(month):02}"
-        
+        self.loadEmployees()
 
     def setHalf(self, half):
         self.half = half
+        self.loadEmployees()
         
-    
+    def filterEmployees(self):
+        date = datetime.strptime(f"{self.half*15+1}-{int(self.month):02}-2019", f"%d-%m-%Y")
+        self.employees = [emp for emp in self.employees if emp.isWorking(date)]
 
     def loadEmployees(self):
         with sqlite3.connect('test2.db') as conn:
             ids = conn.execute('select empid from employees where department = :dept',{'dept':self.name})
         self.employees = [Employee(empid[0]) for empid in ids.fetchall()]
+        self.filterEmployees()
         
         
     def calculateFinances(self):

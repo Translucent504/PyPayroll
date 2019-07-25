@@ -45,7 +45,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def initUI(self):
         self.empmodel = employeeModel()
-        self.atnmodel = attendanceModel('01','Finish',2019,0)
+        self.atnmodel = attendanceModel('01','Dyeing',2019,0)
         self.atndelegate = attendanceDelegate()
         self.proddelagate = QtWidgets.QStyledItemDelegate()
         self.deptmodel = departmentModel()
