@@ -1,5 +1,6 @@
-from PySide2.QtWidgets import QLineEdit, QLabel, QComboBox, QGridLayout, QPushButton
+from PySide2.QtWidgets import QLineEdit, QLabel, QComboBox, QGridLayout, QPushButton, QApplication, QWidget
 import sqlite3
+from datetime import datetime
 
 
 class updateEmployee(QWidget):
@@ -46,7 +47,13 @@ class updateEmployee(QWidget):
         self.working = QComboBox(self)
         self.working.setObjectName("working")
         self.working.addItems(["Working","Terminated"])
+        self.date = QLineEdit(self)
+        self.date.setClearButtonEnabled(True)
+        self.date.setInputMask("00-00-00")
+        tmpdate = datetime.strftime(datetime.now(),'%d-%m-%y')
+        self.date.setText(tmpdate)
         self.rejectbtn = QPushButton("Close")
+        self.label8 = QLabel("Termination Date:")
         self.mainlayout.addWidget(self.label4, 3, 0)
         self.mainlayout.addWidget(self.salary, 3, 1)
         self.mainlayout.addWidget(self.label5, 4, 0)
@@ -55,8 +62,18 @@ class updateEmployee(QWidget):
         self.mainlayout.addWidget(self.overtime, 5, 1)
         self.mainlayout.addWidget(self.label7, 6, 0)
         self.mainlayout.addWidget(self.working, 6, 1)
-        self.mainlayout.addWidget(self.rejectbtn,8,1)
+        self.mainlayout.addWidget(self.label8, 7, 0)
+        self.mainlayout.addWidget(self.date, 7, 1)
+        self.mainlayout.addWidget(self.rejectbtn, 8, 1)
+        self.working.currentIndexChanged.connect(self.enableTerminationDate)
         self.rejectbtn.clicked.connect(self.close)
         self.setLayout(self.mainlayout)
         self.setFocusProxy(self.name)
+
+
+    def enableTerminationDate(self):
+        if self.working.currentText() == "Terminated":
+            self.date.setEnabled(True)
+        else:
+            self.date.setEnabled(False)
         

@@ -16,7 +16,7 @@ class Employee(object):
         self.initInfo()
 
     def initInfo(self):
-        self.overtimehours,self.daysabsent,self.dayspresent,self.meters,self.redyeing,self.loans,self.working,self.termination_date = 0,0,0,0,0,0,'Working', datetime.strptime("14-01-2019",f"%d-%m-%Y")
+        self.overtimehours,self.daysabsent,self.dayspresent,self.meters,self.redyeing,self.loans,self.working,self.termination_date = 0,0,0,0,0,0,'Working', datetime.strptime("01-01-2020",f"%d-%m-%Y")
         self.overtimepay, self.totalpay ,self.meters, self.redyeing,self.normalpay,self.advance = 0,0,0,0,0,0
         with sqlite3.connect('test2.db') as conn:
             empdata = conn.execute("""select "empname", department, designation, salary, "salaryint","""
@@ -30,8 +30,8 @@ class Employee(object):
         self.name, self.department, self.designation, self.salary, self.salary_interval, self.overtimerate, self.working = empdata.fetchone()  
         if self.working == "Terminated":
             with sqlite3.connect("test2.db") as conn:
-                self.termination_date = conn.execute("select date from terminations where empid=:empid",{'empid':self.id}).fetchone([0])                    
-
+                tmp = conn.execute("select date from terminations where empid=:empid",{'empid':self.id}).fetchone()[0]                    
+            self.termination_date = datetime.strptime(tmp,f"%Y-%m-%d")
 
     def setAttendanceDict(self, month, year=2019):
         """

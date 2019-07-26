@@ -26,7 +26,6 @@ class AttendanceEditorWidget(QtWidgets.QWidget):
         self.line1.setText('P')
         self.line2.setText('0')
         self.line1.textChanged.connect(self.line2.setFocus)
-        # self.line1.setFocus()
         self.setFocusProxy(self.line1)
     
 

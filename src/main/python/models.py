@@ -25,6 +25,7 @@ def employeeModel():
     model.setTable('employees')
     for i in range(model.columnCount()):
         model.setHeaderData(i, QtCore.Qt.Horizontal, Definitions.TableHeaders['employees'][i])
+    model.setEditStrategy(QtSql.QSqlTableModel.OnManualSubmit)
     model.select()
     return model
 
@@ -150,7 +151,7 @@ class salaryModel(QtCore.QAbstractTableModel):
 
     def filterEmployees(self):
         date = datetime.strptime(f"{self.half*15+1}-{int(self.month):02}-2019", f"%d-%m-%Y")
-        self.employees = [emp for emp in self.employees if emp.isWorking(date)]
+        self.employees = [emp for emp in self.Allemployees if emp.isWorking(date)]
 
     @QtCore.Slot(int)
     def setMonth(self, month):
@@ -179,7 +180,7 @@ class salaryModel(QtCore.QAbstractTableModel):
     def initEmployees(self):
         with sqlite3.connect('test2.db') as conn:
             empids = conn.execute('select empid from employees where department = :dept',{'dept':self.department})
-        self.employees = [myobjects.Employee(empid[0]) for empid in empids]
+        self.Allemployees = [myobjects.Employee(empid[0]) for empid in empids]
         self.filterEmployees()
 
     def initEmployeePay(self):

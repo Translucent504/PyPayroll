@@ -14,7 +14,7 @@
 
 #bug on exit due to improper object destruction order
 - QBasicTimer::start: QBasicTimer can only be used with threads started with QThread
-- to replicate change employee working status from the table and exit app
+- to replicate: change employee working status from the table and exit app
 
 # When to not display terminated employee data:
 - when the termination date is earlier than the earliest date being displayed by the model. like for attendance

@@ -142,6 +142,8 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         dlg = updateEmployee()
         model = self.empmodel
+        tmp = model.record(self.ui.empTable.currentIndex().row())
+        empid = tmp.value("empid")
         mapper = QtWidgets.QDataWidgetMapper(dlg)
         mapper.setModel(model)
         mapper.addMapping(dlg.name, model.fieldIndex("empname"))
@@ -152,6 +154,25 @@ class MainWindow(QtWidgets.QMainWindow):
         mapper.addMapping(dlg.working, model.fieldIndex("working"))
         mapper.addMapping(dlg.salarystruct, model.fieldIndex("salaryint"))
         mapper.setCurrentIndex(self.ui.empTable.currentIndex().row())
+        if dlg.working.currentText() == "Terminated":
+            dlg.date.setEnabled(True)
+            with sqlite3.connect("test2.db") as conn:
+                tmp = conn.execute("select date from terminations where empid=:empid",{'empid':empid}).fetchone()[0]
+            termdate = datetime.strptime(tmp, "%Y-%m-%d")
+            dlg.date.setText(termdate.strftime("%d-%m-%y"))
+        else:
+            dlg.date.setEnabled(False)
+
+        def terminationDate():
+            if dlg.working.currentText() == "Terminated":
+                date = datetime.strptime(dlg.date.text(), '%d-%m-%y')
+                date = datetime.strftime(date,'%Y-%m-%d')
+                with sqlite3.connect("test2.db") as conn:
+                    conn.execute("""INSERT INTO terminations (empid, date) 
+                                    VALUES(:empid, :date) 
+                                    ON CONFLICT(empid) DO UPDATE SET date=:date""",{'empid':empid, 'date':date})
+        dlg.rejectbtn.clicked.connect(terminationDate)
+        dlg.rejectbtn.clicked.connect(model.submitAll)
         dlg.show()
         
     def UpdateAllModels(self):
