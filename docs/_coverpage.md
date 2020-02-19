@@ -1,6 +1,6 @@
 ![logo](_media/icon.svg)
 
-# PyPayroll <small>0.0.1</small>
+# PyPayroll <!-- <small>0.0.1</small> -->
 
 > A Payroll Management Desktop Application.
 
