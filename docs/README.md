@@ -16,4 +16,20 @@ This was a project made for a user who wanted to able to track their employees' 
 - Used Model View Controller design pattern.
 
 
-## Examples
+## Examples:
+
+### Main Employees Page:
+![Employee Page](_media/employeesPage.png)
+
+### Attendance Page:
+![Attendance Page](_media/attendancePage.png)
+
+### Department Wise Salary Summary Page:
+![Department wise Salary Summary Page](_media/salsummaryPage.png)
+
+### Staff Salary Summary Page:
+![Staff Salary Summary Page](_media/staffsalPage.png)
+
+### Printing Page:
+![Printing Page](_media/printingPage.png)
+
