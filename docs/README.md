@@ -19,7 +19,7 @@ This was a project made for a user who wanted to able to track their employees' 
 ## Coding Documentary Playlist:
 [![Coding Documentary Playlist](_media/youtube_playlist.png)](https://www.youtube.com/watch?v=K6LJLkjxYNU&list=PL5lBgnwJRa1DR-AG9IFNBuAmgwDGGOSPS&index=1)
 
-## Examples:
+## Screenshots:
 
 ### Main Employees Page:
 ![Employee Page](_media/employeesPage.png)
