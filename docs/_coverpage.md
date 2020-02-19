@@ -1,4 +1,4 @@
-![logo](_media/icon.svg)
+![logo](_media/icon.png)
 
 # PyPayroll <small>0.0.1</small>
 
