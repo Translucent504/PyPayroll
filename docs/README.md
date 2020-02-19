@@ -33,3 +33,5 @@ This was a project made for a user who wanted to able to track their employees' 
 ### Printing Page:
 ![Printing Page](_media/printingPage.png)
 
+## Coding Documentary Playlist:
+[![Coding Documentary Playlist](https://i.imgur.com/CKcDRli.png)](https://www.youtube.com/watch?v=K6LJLkjxYNU&list=PL5lBgnwJRa1DR-AG9IFNBuAmgwDGGOSPS&index=1)
