@@ -9,3 +9,4 @@
 - Can Generate PDF Payroll. (ReportLab)
 
 [GitHub](https://github.com/translucent504/PyPayroll)
+[Personal Website](http://translucent504.github.io/)
